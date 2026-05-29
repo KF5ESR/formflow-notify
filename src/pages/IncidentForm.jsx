@@ -8,35 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer, AlertTriangle, Download } from "lucide-react";
 import UnitSection from "@/components/UnitSection";
 import ResponderSection from "@/components/ResponderSection";
 import NarrativeGuided, { buildNarrative } from "@/components/NarrativeGuided";
+import { buildNerisPayload, TYPE_RESPONSE_MAP } from "@/utils/nerisPayload";
 
-const TYPE_RESPONSES = [
-  "Medical > Illness > Chest Pain (Non-Trauma)",
-  "Medical > Illness > Allergic Reaction / Stings",
-  "Medical > Illness > Nausea / Vomiting",
-  "Medical > Trauma > Fall",
-  "Medical > Trauma > MVC Injury",
-  "Fire > Structure Fire > Structural Involvement",
-  "Fire > Structure Fire > Room and Contents Fire",
-  "Fire > Outside Fire > Vegetation / Grass Fire",
-  "Fire > Outside Fire > Dumpster / Other Outdoor Container Fire",
-  "Motor Vehicle Collision (MVC)",
-  "Search and Rescue (SAR)",
-  "No Emergency > Cancelled",
-  "No Emergency > Controlled Burn / Standby",
-  "Natural Disaster",
-  "Hazmat",
-  "Other",
-];
-
+const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
 const FD_OPTIONS = ["Petit Jean", "Oppelo", "Sardis", "Morrilton", "Hill Creek"];
 const MUTUAL_AID_OPTIONS = ["N/A", "Given", "Received", "Given and Received"];
 
-// Convert "HH:MM" time string on a given date to a Date object
 function toDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   try {
@@ -50,7 +32,7 @@ function toDateTime(dateStr, timeStr) {
 function diffMinutes(a, b) {
   if (!a || !b) return null;
   const diff = Math.round((b - a) / 60000);
-  return diff >= 0 ? diff : null;
+  return diff;
 }
 
 function formatMinutes(mins) {
@@ -68,23 +50,26 @@ const EMPTY_FORM = {
   area: "", vin_lic: "", products: "", patients_injured: "", fatalities: "",
   mutual_aid: "N/A", fdid_received: "", total_amount: "", hydrant_location: "",
   conditions_temp: "", select_fd: "Petit Jean", incident_commander: "",
-  narrative_reported: "", narrative_found: "", narrative_condition: "", narrative_actions: "", narrative_disposition: "",
-  notes: "", form_url: "",
-  neris_env: "TEST", neris_post_status: "", neris_incident_composite: "", neris_logged: false, email_status: "",
+  narrative_reported: "", narrative_found: "", narrative_condition: "",
+  narrative_actions: "", narrative_disposition: "", notes: "", form_url: "",
+  neris_env: "TEST", neris_post_status: "", neris_incident_composite: "",
+  neris_logged: false, email_status: "",
 };
 
-const Section = ({ title, badge, children, defaultOpen = true, fullGrid = false }) => {
+const Section = ({ title, badge, children, defaultOpen = true, fullGrid = false, warning }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden mb-4">
+    <div className={`border rounded-xl overflow-hidden mb-4 ${warning ? "border-amber-300" : "border-slate-200"}`}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+        className={`w-full flex items-center justify-between px-5 py-3 transition-colors ${warning ? "bg-amber-50 hover:bg-amber-100" : "bg-slate-50 hover:bg-slate-100"}`}
       >
         <div className="flex items-center gap-2">
+          {warning && <AlertTriangle className="w-4 h-4 text-amber-500" />}
           <span className="font-semibold text-slate-800">{title}</span>
           {badge && <Badge variant="secondary" className="text-xs">{badge}</Badge>}
+          {warning && <span className="text-xs text-amber-600 font-medium">{warning}</span>}
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
       </button>
@@ -106,12 +91,15 @@ const Field = ({ label, required, children, full }) => (
   </div>
 );
 
-const CalcBadge = ({ label, minutes }) => {
+const CalcBadge = ({ label, minutes, warn }) => {
   if (minutes === null || minutes === undefined) return null;
+  const isNeg = minutes < 0;
   return (
-    <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
-      <Timer className="w-3.5 h-3.5 text-green-600" />
-      <span className="text-xs text-green-700 font-medium">{label}: <strong>{formatMinutes(minutes)}</strong></span>
+    <div className={`flex items-center gap-1.5 border rounded-lg px-3 py-1.5 ${isNeg || warn ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+      {(isNeg || warn) ? <AlertTriangle className="w-3.5 h-3.5 text-red-500" /> : <Timer className="w-3.5 h-3.5 text-green-600" />}
+      <span className={`text-xs font-medium ${isNeg || warn ? "text-red-700" : "text-green-700"}`}>
+        {label}: <strong>{isNeg ? "⚠ Negative — check times" : formatMinutes(minutes)}</strong>
+      </span>
     </div>
   );
 };
@@ -162,11 +150,33 @@ export default function IncidentForm() {
     };
   }, [form.date, form.dispatch_time, form.first_on_scene_time, form.fd_clear_time]);
 
-  // Derive IC from responders if not set manually
-  const icFromResponders = useMemo(() => {
-    const ic = responders.find((r) => r.role === "IC");
-    return ic ? ic.name : "";
-  }, [responders]);
+  // Validation flags
+  const icFromResponders = useMemo(() => (responders.find((r) => r.role === "IC") || {}).name || "", [responders]);
+  const hasIC = !!(form.incident_commander || icFromResponders);
+  const clearBeforeScene = calcTimes.scene !== null && calcTimes.scene < 0;
+  const clearBeforeDispatch = calcTimes.duration !== null && calcTimes.duration < 0;
+  const hasTimeConflict = clearBeforeScene || clearBeforeDispatch;
+
+  // All validation issues
+  const validationIssues = useMemo(() => {
+    const issues = [];
+    if (!hasIC) issues.push("No IC assigned — add a responder with Role = IC or set the IC field");
+    if (clearBeforeScene) issues.push("FD_CLEAR_TIME is before FIRST_ON_SCENE_TIME");
+    if (clearBeforeDispatch) issues.push("FD_CLEAR_TIME is before DISPATCH_TIME");
+    return issues;
+  }, [hasIC, clearBeforeScene, clearBeforeDispatch]);
+
+  // Export payload
+  const handleExport = () => {
+    const payload = buildNerisPayload(form, units, responders);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `neris_payload_${form.nfirs_id || "draft"}_${form.date || "nodate"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const save = useMutation({
     mutationFn: (data) => isEdit ? base44.entities.Incident.update(id, data) : base44.entities.Incident.create(data),
@@ -178,11 +188,9 @@ export default function IncidentForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const generatedNarrative = buildNarrative(form);
     const payload = {
       ...form,
       incident_commander: form.incident_commander || icFromResponders,
-      notes: generatedNarrative || form.notes,
       units_json: JSON.stringify(units),
       responders_json: JSON.stringify(responders),
     };
@@ -203,20 +211,45 @@ export default function IncidentForm() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="rounded-full">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1">
             <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
               <Flame className="w-5 h-5 text-red-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">{isEdit ? "Edit Incident" : "New Incident Report"}</h1>
-              <p className="text-sm text-slate-500">Petit Jean Fire Department{isAdmin && <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Admin View</span>}</p>
+              <p className="text-sm text-slate-500">
+                Petit Jean Fire Department
+                {isAdmin && <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Admin View</span>}
+              </p>
             </div>
           </div>
+          {isAdmin && (
+            <Button type="button" variant="outline" onClick={handleExport} className="shrink-0 text-slate-600 border-slate-300">
+              <Download className="w-4 h-4 mr-2" /> Export Payload
+            </Button>
+          )}
         </div>
+
+        {/* Validation banner */}
+        {validationIssues.length > 0 && (
+          <div className="mb-4 bg-amber-50 border border-amber-300 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-semibold text-amber-800">Report Issues ({validationIssues.length})</span>
+            </div>
+            <ul className="space-y-1">
+              {validationIssues.map((issue, i) => (
+                <li key={i} className="text-sm text-amber-700 flex items-start gap-2">
+                  <span className="mt-0.5">•</span>{issue}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-2">
 
@@ -227,7 +260,11 @@ export default function IncidentForm() {
           </Section>
 
           {/* Times */}
-          <Section title="Date & Times" badge="Times">
+          <Section
+            title="Date & Times"
+            badge="Times"
+            warning={hasTimeConflict ? "Time conflict detected" : null}
+          >
             <Field label="Date" required>
               <Input type="date" value={form.date} onChange={set("date")} />
             </Field>
@@ -254,8 +291,13 @@ export default function IncidentForm() {
             </Field>
             <Field label="FD_CLEAR_TIME">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                <Input type="time" value={form.fd_clear_time} onChange={set("fd_clear_time")} />
+                <Clock className={`w-4 h-4 shrink-0 ${hasTimeConflict ? "text-red-400" : "text-slate-400"}`} />
+                <Input
+                  type="time"
+                  value={form.fd_clear_time}
+                  onChange={set("fd_clear_time")}
+                  className={hasTimeConflict ? "border-red-300 bg-red-50" : ""}
+                />
               </div>
             </Field>
             {/* Calculated durations */}
@@ -263,7 +305,7 @@ export default function IncidentForm() {
               <div className="md:col-span-2 flex flex-wrap gap-2 pt-1">
                 <CalcBadge label="Response" minutes={calcTimes.response} />
                 <CalcBadge label="Incident Duration" minutes={calcTimes.duration} />
-                <CalcBadge label="Scene Duration" minutes={calcTimes.scene} />
+                <CalcBadge label="Scene Duration" minutes={calcTimes.scene} warn={clearBeforeScene} />
               </div>
             )}
           </Section>
@@ -301,6 +343,14 @@ export default function IncidentForm() {
                 <SelectContent>{TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
               </Select>
             </Field>
+            {form.type_response && TYPE_RESPONSE_MAP[form.type_response] && (
+              <div className="md:col-span-2 flex items-center gap-2 -mt-2">
+                <span className="text-xs text-slate-400">NERIS code:</span>
+                <code className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
+                  {TYPE_RESPONSE_MAP[form.type_response].code}
+                </code>
+              </div>
+            )}
             <Field label="Type Response (Secondary)">
               <Select value={form.type_response_2} onValueChange={set("type_response_2")}>
                 <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
@@ -319,11 +369,13 @@ export default function IncidentForm() {
           </Section>
 
           {/* Unit Response */}
-          <Section title="Unit Response" badge={units.length > 0 ? `${units.length} unit${units.length > 1 ? "s" : ""}` : undefined} fullGrid>
-            <div className="mb-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Label className="text-sm font-medium text-slate-700">Select FD</Label>
-              </div>
+          <Section
+            title="Unit Response"
+            badge={units.length > 0 ? `${units.length} unit${units.length !== 1 ? "s" : ""}` : undefined}
+            fullGrid
+          >
+            <div className="mb-3">
+              <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Select FD</Label>
               <Select value={form.select_fd} onValueChange={set("select_fd")}>
                 <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
                 <SelectContent>{FD_OPTIONS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
@@ -333,23 +385,38 @@ export default function IncidentForm() {
           </Section>
 
           {/* Responders */}
-          <Section title="Responders" badge={responders.length > 0 ? `${responders.length}` : undefined} fullGrid>
-            {icFromResponders && (
-              <div className="mb-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                IC auto-detected from responders: <strong>{icFromResponders}</strong>
+          <Section
+            title="Responders"
+            badge={responders.length > 0 ? `${responders.length}` : undefined}
+            fullGrid
+            warning={!hasIC ? "No IC assigned" : null}
+          >
+            <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  Incident Commander (IC)
+                  {!hasIC && <span className="ml-2 text-xs text-amber-600">⚠ Required</span>}
+                </Label>
+                <Input
+                  value={form.incident_commander}
+                  onChange={set("incident_commander")}
+                  placeholder={icFromResponders ? `Auto: ${icFromResponders}` : "Name or assign IC role below"}
+                  className={!hasIC ? "border-amber-300" : ""}
+                />
+                {icFromResponders && !form.incident_commander && (
+                  <p className="text-xs text-green-600 mt-1">Auto-detected from responders: {icFromResponders}</p>
+                )}
               </div>
-            )}
-            <div className="mb-3">
-              <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Incident Commander (IC)</Label>
-              <Input value={form.incident_commander} onChange={set("incident_commander")} placeholder={icFromResponders || "Override IC name..."} className="max-w-xs" />
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Ambulance Service/Unit No.</Label>
+                <Input
+                  value={form.ambulance_unit || ""}
+                  onChange={(e) => setForm(f => ({ ...f, ambulance_unit: e.target.value }))}
+                  placeholder="e.g. Med-Tech / 8001"
+                />
+              </div>
             </div>
             <ResponderSection responders={responders} onChange={setResponders} />
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs text-slate-600 mb-1 block">Ambulance Service/Unit No.</Label>
-                <Input value={form.ambulance_unit || ""} onChange={(e) => setForm(f => ({...f, ambulance_unit: e.target.value}))} placeholder="e.g. Med-Tech / 8001" className="h-8 text-sm" />
-              </div>
-            </div>
           </Section>
 
           {/* Mutual Aid */}
@@ -377,7 +444,7 @@ export default function IncidentForm() {
             <Field label="Total Amount ($)"><Input type="number" value={form.total_amount} onChange={set("total_amount")} /></Field>
             <Field label="Area"><Input value={form.area} onChange={set("area")} placeholder="e.g. 2 acres" /></Field>
             <Field label="VIN / LIC"><Input value={form.vin_lic} onChange={set("vin_lic")} /></Field>
-            <Field label="Products Involved"><Input value={form.products} onChange={set("products")} placeholder="e.g. Brush, Propane" /></Field>
+            <Field label="Products Involved"><Input value={form.products} onChange={set("products")} /></Field>
             <Field label="Patients Injured"><Input type="number" value={form.patients_injured} onChange={set("patients_injured")} /></Field>
             <Field label="Fatalities"><Input type="number" value={form.fatalities} onChange={set("fatalities")} /></Field>
           </Section>
@@ -402,7 +469,7 @@ export default function IncidentForm() {
               <Field label="NERIS Post Status">
                 <Input value={form.neris_post_status} onChange={set("neris_post_status")} placeholder="e.g. success, pending" />
               </Field>
-              <Field label="NERIS Incident Composite ID">
+              <Field label="NERIS Incident Composite ID" full>
                 <Input value={form.neris_incident_composite} onChange={set("neris_incident_composite")} placeholder="e.g. FD12345678|001|000000001" />
               </Field>
               <Field label="NERIS Logged">
