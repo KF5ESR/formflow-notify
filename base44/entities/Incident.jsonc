@@ -1,0 +1,194 @@
+{
+  "name": "Incident",
+  "type": "object",
+  "properties": {
+    "nfirs_id": {
+      "type": "string",
+      "title": "NFIRS ID"
+    },
+    "psrid": {
+      "type": "string",
+      "title": "PSRID"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "title": "Date"
+    },
+    "call_time": {
+      "type": "string",
+      "title": "Call Time"
+    },
+    "on_scene": {
+      "type": "string",
+      "title": "On Scene"
+    },
+    "controlled": {
+      "type": "string",
+      "title": "Controlled"
+    },
+    "in_service": {
+      "type": "string",
+      "title": "In Service"
+    },
+    "incident_location": {
+      "type": "string",
+      "title": "Incident Location"
+    },
+    "owner_occupant": {
+      "type": "string",
+      "title": "Owner/Occupant or Patient Name & Address"
+    },
+    "contact_number": {
+      "type": "string",
+      "title": "Contact Number"
+    },
+    "nature_of_call": {
+      "type": "string",
+      "title": "Nature of Call"
+    },
+    "investigation": {
+      "type": "string",
+      "enum": [
+        "Yes",
+        "No"
+      ],
+      "title": "Investigation"
+    },
+    "action_taken": {
+      "type": "string",
+      "title": "Action Taken"
+    },
+    "type_response": {
+      "type": "string",
+      "title": "Type Response (Primary)"
+    },
+    "type_response_2": {
+      "type": "string",
+      "title": "Type Response (Secondary)"
+    },
+    "property_type": {
+      "type": "string",
+      "title": "Property Type"
+    },
+    "value_dollar": {
+      "type": "number",
+      "title": "Value (Dollar Amount)"
+    },
+    "loss_dollar": {
+      "type": "number",
+      "title": "Loss (Dollar Amount)"
+    },
+    "value_crop": {
+      "type": "number",
+      "title": "Value - Crop"
+    },
+    "value_vehicle": {
+      "type": "number",
+      "title": "Value - Vehicle"
+    },
+    "area": {
+      "type": "string",
+      "title": "Area"
+    },
+    "vin_lic": {
+      "type": "string",
+      "title": "VIN/LIC"
+    },
+    "products": {
+      "type": "string",
+      "title": "Products Involved"
+    },
+    "patients_injured": {
+      "type": "number",
+      "title": "Number of Patients Injured"
+    },
+    "fatalities": {
+      "type": "number",
+      "title": "Fatalities"
+    },
+    "mutual_aid": {
+      "type": "string",
+      "title": "Mutual Aid Given/Received"
+    },
+    "fdid_received": {
+      "type": "string",
+      "title": "FDID Number Received"
+    },
+    "total_personnel": {
+      "type": "string",
+      "title": "Total Personnel/Apparatus"
+    },
+    "ambulance_unit": {
+      "type": "string",
+      "title": "Ambulance Service/Unit No."
+    },
+    "total_amount": {
+      "type": "number",
+      "title": "Total Amount"
+    },
+    "hydrant_location": {
+      "type": "string",
+      "title": "Hydrant Number/Location"
+    },
+    "conditions_temp": {
+      "type": "string",
+      "title": "Conditions/Temp"
+    },
+    "select_fd": {
+      "type": "string",
+      "title": "Select FD"
+    },
+    "incident_commander": {
+      "type": "string",
+      "title": "Incident Commander (IC)"
+    },
+    "apparatus": {
+      "type": "string",
+      "title": "Apparatus"
+    },
+    "responders": {
+      "type": "string",
+      "title": "Responders"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notes"
+    },
+    "form_url": {
+      "type": "string",
+      "title": "Form URL"
+    },
+    "neris_env": {
+      "type": "string",
+      "enum": [
+        "TEST",
+        "PROD"
+      ],
+      "title": "NERIS Environment",
+      "default": "TEST"
+    },
+    "neris_post_status": {
+      "type": "string",
+      "title": "NERIS Post Status"
+    },
+    "neris_incident_composite": {
+      "type": "string",
+      "title": "NERIS Incident Composite ID"
+    },
+    "neris_logged": {
+      "type": "boolean",
+      "title": "NERIS Logged"
+    },
+    "email_status": {
+      "type": "string",
+      "title": "Email Status"
+    }
+  },
+  "required": [
+    "date",
+    "incident_location",
+    "nature_of_call",
+    "action_taken"
+  ]
+}
