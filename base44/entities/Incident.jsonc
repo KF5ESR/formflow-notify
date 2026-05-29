@@ -15,21 +15,21 @@
       "format": "date",
       "title": "Date"
     },
-    "call_time": {
+    "dispatch_time": {
       "type": "string",
-      "title": "Call Time"
+      "title": "Dispatch Time"
     },
-    "on_scene": {
+    "first_on_scene_time": {
       "type": "string",
-      "title": "On Scene"
+      "title": "First On Scene Time"
     },
-    "controlled": {
+    "control_time": {
       "type": "string",
-      "title": "Controlled"
+      "title": "Control Time"
     },
-    "in_service": {
+    "fd_clear_time": {
       "type": "string",
-      "title": "In Service"
+      "title": "FD Clear Time"
     },
     "incident_location": {
       "type": "string",
@@ -115,14 +115,6 @@
       "type": "string",
       "title": "FDID Number Received"
     },
-    "total_personnel": {
-      "type": "string",
-      "title": "Total Personnel/Apparatus"
-    },
-    "ambulance_unit": {
-      "type": "string",
-      "title": "Ambulance Service/Unit No."
-    },
     "total_amount": {
       "type": "number",
       "title": "Total Amount"
@@ -143,17 +135,37 @@
       "type": "string",
       "title": "Incident Commander (IC)"
     },
-    "apparatus": {
+    "units_json": {
       "type": "string",
-      "title": "Apparatus"
+      "title": "Units (JSON)"
     },
-    "responders": {
+    "responders_json": {
       "type": "string",
-      "title": "Responders"
+      "title": "Responders (JSON)"
+    },
+    "narrative_reported": {
+      "type": "string",
+      "title": "What was reported?"
+    },
+    "narrative_found": {
+      "type": "string",
+      "title": "What was found on arrival?"
+    },
+    "narrative_condition": {
+      "type": "string",
+      "title": "Patient/Scene condition"
+    },
+    "narrative_actions": {
+      "type": "string",
+      "title": "Actions taken"
+    },
+    "narrative_disposition": {
+      "type": "string",
+      "title": "Disposition / Who took over"
     },
     "notes": {
       "type": "string",
-      "title": "Notes"
+      "title": "Narrative (full)"
     },
     "form_url": {
       "type": "string",
@@ -165,8 +177,7 @@
         "TEST",
         "PROD"
       ],
-      "title": "NERIS Environment",
-      "default": "TEST"
+      "title": "NERIS Environment"
     },
     "neris_post_status": {
       "type": "string",
