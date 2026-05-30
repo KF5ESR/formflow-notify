@@ -7,26 +7,34 @@
  * The Apps Script engine maps these codes to the OpenAPI-spec enum values.
  */
 
+// TYPE_RESPONSE_MAP: Human label → { code: NERIS hierarchy, label: display }
+// Codes are aligned with FANerisTools.gs coerceIncidentTypeHierarchy_() and
+// https://github.com/ulfsri/neris-framework/blob/main/core_schemas/value_sets/csv/type_incident.csv
 export const TYPE_RESPONSE_MAP = {
-  // Medical
-  "Medical > Illness > Chest Pain (Non-Trauma)":          { code: "MEDICAL||ILLNESS||CHEST_PAIN_NON_TRAUMA",        label: "Medical - Illness - Chest Pain (Non-Trauma)" },
-  "Medical > Illness > Allergic Reaction / Stings":       { code: "MEDICAL||ILLNESS||ALLERGIC_REACTION",            label: "Medical - Illness - Allergic Reaction / Stings" },
-  "Medical > Illness > Nausea / Vomiting":                { code: "MEDICAL||ILLNESS||NAUSEA_VOMITING",              label: "Medical - Illness - Nausea / Vomiting" },
-  "Medical > Trauma > Fall":                              { code: "MEDICAL||TRAUMA||FALL",                          label: "Medical - Injury/Trauma - Fall" },
-  "Medical > Trauma > MVC Injury":                        { code: "MEDICAL||TRAUMA||MVC_INJURY",                    label: "Medical - Injury/Trauma - MVC Injury" },
-  // Fire
-  "Fire > Structure Fire > Structural Involvement":       { code: "FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT",   label: "Fire - Structure Fire - Structural Involvement" },
-  "Fire > Structure Fire > Room and Contents Fire":       { code: "FIRE||STRUCTURE_FIRE||ROOM_AND_CONTENTS",        label: "Fire - Structure Fire - Room and Contents" },
-  "Fire > Outside Fire > Vegetation / Grass Fire":        { code: "FIRE||OUTSIDE_FIRE||VEGETATION_GRASS",           label: "Fire - Outside Fire - Vegetation/Grass" },
-  "Fire > Outside Fire > Dumpster / Other Outdoor Container Fire": { code: "FIRE||OUTSIDE_FIRE||DUMPSTER_CONTAINER", label: "Fire - Outside Fire - Dumpster/Container" },
+  // Medical - Illness
+  "Medical > Illness > Chest Pain (Non-Trauma)":          { code: "MEDICAL||ILLNESS||CHEST_PAIN_NON_TRAUMA",                          label: "Medical - Illness - Chest Pain (Non-Trauma)" },
+  "Medical > Illness > Allergic Reaction / Stings":       { code: "MEDICAL||ILLNESS||ALLERGIC_REACTION",                             label: "Medical - Illness - Allergic Reaction / Stings" },
+  "Medical > Illness > Nausea / Vomiting":                { code: "MEDICAL||ILLNESS||NAUSEA_VOMITING",                               label: "Medical - Illness - Nausea / Vomiting" },
+  // Medical - Injury
+  "Medical > Trauma > Fall":                              { code: "MEDICAL||INJURY||FALL",                                           label: "Medical - Injury/Trauma - Fall" },
+  "Medical > Trauma > MVC Injury":                        { code: "MEDICAL||INJURY||MVC_INJURY",                                     label: "Medical - Injury/Trauma - MVC Injury" },
+  // Fire - Structure
+  "Fire > Structure Fire > Structural Involvement":       { code: "FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT",                   label: "Fire - Structure Fire - Structural Involvement" },
+  "Fire > Structure Fire > Room and Contents Fire":       { code: "FIRE||STRUCTURE_FIRE||ROOM_AND_CONTENTS_FIRE",                   label: "Fire - Structure Fire - Room and Contents" },
+  // Fire - Outside
+  "Fire > Outside Fire > Vegetation / Grass Fire":        { code: "FIRE||OUTSIDE_FIRE||VEGETATION_GRASS_FIRE",                      label: "Fire - Outside Fire - Vegetation/Grass" },
+  "Fire > Outside Fire > Dumpster / Other Outdoor Container Fire": { code: "FIRE||OUTSIDE_FIRE||DUMPSTER_OUTDOOR_CONTAINER_FIRE",   label: "Fire - Outside Fire - Dumpster/Container" },
+  // Hazardous Situation
+  "Motor Vehicle Collision (MVC)":                        { code: "HAZSIT||HAZARD_NONCHEM||MOTOR_VEHICLE_COLLISION",                label: "Hazardous Situation - Motor Vehicle Collision" },
+  // Rescue
+  "Search and Rescue (SAR)":                              { code: "RESCUE||SAR",                                                    label: "Rescue - Search and Rescue" },
+  // Public Service
+  "No Emergency > Cancelled":                             { code: "NOEMERG||CANCELLED",                                             label: "No Emergency - Cancelled" },
+  "No Emergency > Controlled Burn / Standby":             { code: "NOEMERG||GOOD_INTENT||CONTROLLED_BURNING_AUTHORIZED",            label: "No Emergency - Controlled Burning Authorized" },
   // Other
-  "Motor Vehicle Collision (MVC)":                        { code: "RESCUE||VEHICLE||MVC",                          label: "Rescue - Vehicle - MVC" },
-  "Search and Rescue (SAR)":                              { code: "RESCUE||SAR",                                   label: "Rescue - Search and Rescue" },
-  "No Emergency > Cancelled":                             { code: "NO_EMERGENCY||CANCELLED",                       label: "No Emergency - Cancelled" },
-  "No Emergency > Controlled Burn / Standby":             { code: "NO_EMERGENCY||CONTROLLED_BURN",                 label: "No Emergency - Controlled Burn / Standby" },
-  "Natural Disaster":                                     { code: "NATURAL_DISASTER",                              label: "Natural Disaster" },
-  "Hazmat":                                               { code: "HAZMAT",                                        label: "Hazmat" },
-  "Other":                                                { code: "OTHER",                                         label: "Other" },
+  "Natural Disaster":                                     { code: "NATURAL_DISASTER",                                              label: "Natural Disaster" },
+  "Hazmat":                                               { code: "HAZSIT||HAZARDOUS_MATERIALS",                                   label: "Hazardous Materials" },
+  "Other":                                                { code: "OTHER",                                                          label: "Other" },
 };
 
 /** Convert "HH:MM" + date string to ISO datetime string */

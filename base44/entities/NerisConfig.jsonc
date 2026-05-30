@@ -1,0 +1,54 @@
+{
+  "name": "NerisConfig",
+  "type": "object",
+  "properties": {
+    "env": {
+      "type": "string",
+      "enum": [
+        "TEST",
+        "PROD"
+      ],
+      "title": "Environment",
+      "default": "TEST"
+    },
+    "base_url": {
+      "type": "string",
+      "title": "NERIS Base URL"
+    },
+    "entity_id": {
+      "type": "string",
+      "title": "NERIS Entity ID"
+    },
+    "fd_name": {
+      "type": "string",
+      "title": "Fire Department Name"
+    },
+    "default_state": {
+      "type": "string",
+      "title": "Default State Code (e.g. AR)"
+    },
+    "default_city": {
+      "type": "string",
+      "title": "Default City"
+    },
+    "default_postal": {
+      "type": "string",
+      "title": "Default Postal Code"
+    },
+    "use_gh_valuesets": {
+      "type": "boolean",
+      "title": "Use GitHub Value Sets for incident type mapping"
+    },
+    "calltype_aliases": {
+      "type": "string",
+      "title": "Custom Call Type Aliases (one per line: from=to)"
+    },
+    "last_post_status": {
+      "type": "string",
+      "title": "Last Post Status"
+    }
+  },
+  "required": [
+    "env"
+  ]
+}

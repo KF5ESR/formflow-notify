@@ -13,6 +13,7 @@ import UnitSection from "@/components/UnitSection";
 import ResponderSection from "@/components/ResponderSection";
 import NarrativeGuided, { buildNarrative } from "@/components/NarrativeGuided";
 import { buildNerisPayload, TYPE_RESPONSE_MAP } from "@/utils/nerisPayload";
+import NerisPanel from "@/components/NerisPanel";
 
 const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
@@ -487,6 +488,13 @@ export default function IncidentForm() {
               <Field label="Form URL" full>
                 <Input value={form.form_url} onChange={set("form_url")} placeholder="Google Forms edit URL" />
               </Field>
+            </Section>
+          )}
+
+          {/* NERIS Translation Engine — admin only */}
+          {isAdmin && (
+            <Section title="NERIS Translation Engine" badge="Admin Only" fullGrid>
+              <NerisPanel form={form} units={units} responders={responders} />
             </Section>
           )}
 
