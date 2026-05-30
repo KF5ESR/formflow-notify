@@ -307,29 +307,47 @@ export function translateToNeris(faJson, config = {}) {
   // ── Narrative ─────────────────────────────────────────────────────────────
   const narrative = base.narrative || '';
 
-  // ── Dispatch times ────────────────────────────────────────────────────────
-  // Per Apps Script conventions:
-  //   call_create / call_answered / dispatched_time → alarm_time
-  //   call_arrival → first_on_scene_time (unit arrival at scene, PSAP fallback)
-  //   incident_clear → fd_clear_time
-  const alarmISO = dispatch.alarm_time || '';
-  const onSceneISO = dispatch.first_on_scene_time || '';
-  const clearISO = dispatch.incident_clear || '';
+  // ── Dispatch times ─────────────────────────────────────────────────────────
+  //
+  // FAST ATTACK has NO CAD/PSAP connection.
+  // All dispatch times are user-entered approximations, NOT CAD truth.
+  //
+  // NERIS field semantics:
+  //   dispatch.call_arrival   → time the call arrived at PSAP/dispatch center
+  //   dispatch.call_answered  → time PSAP answered the call
+  //   dispatch.call_create    → time the incident was created in CAD
+  //
+  // Because we have no CAD feed, DISPATCH_TIME (entered by the department)
+  // is our best-available approximation for all three PSAP time fields.
+  //
+  // FIRST_ON_SCENE_TIME is NOT dispatch.call_arrival.
+  // It maps to unit_responses[].on_scene for each unit.
+  //
+  const dispatchISO = dispatch.alarm_time || '';          // DISPATCH_TIME → PSAP fallback
+  const clearISO    = dispatch.incident_clear || '';       // FD_CLEAR_TIME
 
   // ── Unit responses ────────────────────────────────────────────────────────
+  //
+  // FIRST_ON_SCENE_TIME maps to unit_responses[].on_scene.
+  // It is NOT dispatch.call_arrival.
+  //
+  // For per-unit times: use unit-specific times if available,
+  // falling back to the incident-level FIRST_ON_SCENE_TIME for on_scene.
+  //
+  const incidentOnSceneISO = dispatch.first_on_scene_time || '';
+
   const unitResponses = apparatus.map(u => {
+    // on_scene: prefer per-unit time, fall back to incident FIRST_ON_SCENE_TIME
+    const unitOnScene = u.on_scene_time || incidentOnSceneISO || '';
     const raw = {
-      // Use reported_id_unit for non-NERIS labels (e.g. "POV", "E555")
-      // Will swap to neris_id_unit if/when unit catalog is available
       reported_id_unit: u.unit_id || '',
       staffing: u.staffing != null && u.staffing !== '' ? Number(u.staffing) : undefined,
-      // Map FA time keys → canonical NERIS keys
-      dispatch: u.dispatch_time || '',
-      enroute_to_scene: u.enroute_time || '',
-      on_scene: u.on_scene_time || '',
-      unit_clear: u.clear_time || '',
+      // Canonical NERIS time keys:
+      dispatch:          u.dispatch_time || '',
+      enroute_to_scene:  u.enroute_time || '',
+      on_scene:          unitOnScene,          // FIRST_ON_SCENE_TIME → here
+      unit_clear:        u.clear_time || '',
     };
-    // Remove empty strings to avoid sending null-like values
     Object.keys(raw).forEach(k => {
       if (raw[k] === '' || raw[k] == null) delete raw[k];
     });
@@ -361,14 +379,25 @@ export function translateToNeris(faJson, config = {}) {
     dispatch: {
       primary_type: primaryCode,
 
-      // Time chain (Apps Script fills call_create from alarm if no earlier PSAP time)
-      call_create:    alarmISO || undefined,
-      call_answered:  alarmISO || undefined,
-      dispatched_time: alarmISO || undefined,
-      call_arrival:   onSceneISO || undefined,   // first unit on scene
+      // PSAP call time fields — all sourced from user-entered DISPATCH_TIME
+      // because FAST ATTACK has no CAD connection.
+      // call_arrival = when call arrived at dispatch/PSAP (NOT unit on-scene).
+      call_arrival:    dispatchISO || undefined,
+      call_answered:   dispatchISO || undefined,
+      call_create:     dispatchISO || undefined,
+      dispatched_time: dispatchISO || undefined,
+
       incident_clear: clearISO || undefined,
 
       unit_responses: unitResponses.length ? unitResponses : undefined,
+    },
+
+    // Provenance: document that this is not CAD truth
+    _dispatch_provenance: {
+      cad_connected:             false,
+      dispatch_time_source:      'USER_ENTERED_NON_CAD',
+      dispatch_time_confidence:  'MEDIUM',
+      note: 'No PSAP/CAD feed. DISPATCH_TIME entered by department personnel as best-available approximation.',
     },
 
     // Incident types array (canonical hierarchy objects)

@@ -187,52 +187,35 @@ export default function NerisPanel({ form, units, responders }) {
         <span className="bg-slate-100 px-2 py-1 rounded">Validate → Submit</span>
       </div>
 
-      {/* Incident type translation preview */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <div className="text-xs font-medium text-slate-500 mb-2">Incident Type Translation</div>
-        <div className="flex items-start gap-2 flex-wrap">
-          <div>
-            <div className="text-xs text-slate-400">Human label (FA)</div>
-            <code className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded">
-              {form.type_response || "(not set)"}
-            </code>
-          </div>
-          <ArrowRight className="w-4 h-4 text-slate-400 mt-4" />
-          <div>
-            <div className="text-xs text-slate-400">NERIS code hierarchy</div>
-            <code className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded font-mono">
-              {nerisPayload.call_type || <span className="text-red-500 italic">⚠ unresolved</span>}
-            </code>
-          </div>
-          {nerisPayload.incident_types?.[0]?.code && (
-            <>
-              <ArrowRight className="w-4 h-4 text-slate-400 mt-4" />
-              <div>
-                <div className="text-xs text-slate-400">Leaf code</div>
-                <code className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
-                  {nerisPayload.incident_types[0].code}
-                </code>
-              </div>
-            </>
-          )}
+      {/* PSAP time source banner */}
+      <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+        <div className="text-xs text-blue-700">
+          <strong>Non-CAD dispatch mode:</strong> No PSAP/CAD connection.
+          <span className="ml-1"><code className="bg-blue-100 px-1 rounded">DISPATCH_TIME</code> → <code className="bg-blue-100 px-1 rounded">call_arrival / call_answered / call_create</code> (user-entered fallback).</span>
+          <span className="ml-1"><code className="bg-blue-100 px-1 rounded">FIRST_ON_SCENE_TIME</code> → <code className="bg-blue-100 px-1 rounded">unit_responses[].on_scene</code> only.</span>
+          <span className="ml-2 text-blue-500 font-mono">time_source: USER_ENTERED_NON_CAD</span>
         </div>
       </div>
 
-      {/* Unit time key translation */}
+      {/* Incident type translation preview */}
       {units.length > 0 && (
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <div className="text-xs font-medium text-slate-500 mb-2">Unit Time Keys (FA → NERIS canonical)</div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+          <div className="text-xs font-medium text-slate-500 mb-2">Unit Time Keys (FA → NERIS canonical) — legacy aliases stripped</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 text-xs">
             {[
-              ["dispatch_time", "dispatch"],
-              ["enroute_time", "enroute_to_scene"],
-              ["on_scene_time", "on_scene"],
-              ["clear_time", "unit_clear"],
-            ].map(([fa, neris]) => (
-              <div key={fa} className="flex items-center gap-1">
-                <code className="text-amber-600 bg-amber-50 px-1 rounded">{fa}</code>
+              ["dispatch_time",          "unit_responses[].dispatch",          false],
+              ["enroute_time",           "unit_responses[].enroute_to_scene",  false],
+              ["on_scene_time",          "unit_responses[].on_scene",          false],
+              ["clear_time",             "unit_responses[].unit_clear",        false],
+              ["DISPATCH_TIME",          "dispatch.call_arrival / call_create", true],
+              ["FIRST_ON_SCENE_TIME",    "unit_responses[].on_scene (fallback if blank)", true],
+            ].map(([fa, neris, isIncident]) => (
+              <div key={fa} className={`flex items-center gap-1 px-2 py-1 rounded ${isIncident ? 'bg-blue-50 border border-blue-100' : ''}`}>
+                <code className={`px-1 rounded ${isIncident ? 'text-blue-700 bg-blue-100' : 'text-amber-600 bg-amber-50'}`}>{fa}</code>
                 <ArrowRight className="w-3 h-3 text-slate-400 shrink-0" />
-                <code className="text-green-600 bg-green-50 px-1 rounded">{neris}</code>
+                <code className={`px-1 rounded ${isIncident ? 'text-blue-700 bg-blue-100' : 'text-green-600 bg-green-50'}`}>{neris}</code>
+                {isIncident && <span className="text-blue-400 ml-1">(incident-level)</span>}
               </div>
             ))}
           </div>
