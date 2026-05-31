@@ -287,16 +287,8 @@ export function translateToNeris(faJson, config = {}) {
   const codeHierarchy2 = rawLabel2 ? (resolveIncidentTypeCode(rawLabel2) || resolveIncidentTypeCode(rawType2) || rawType2) : '';
 
   const incidentTypes = [
-    codeHierarchy1 && {
-      code: leafCode(codeHierarchy1),
-      type: codeHierarchy1,
-      original: rawLabel1 || rawType1,
-    },
-    codeHierarchy2 && {
-      code: leafCode(codeHierarchy2),
-      type: codeHierarchy2,
-      original: rawLabel2 || rawType2,
-    },
+    codeHierarchy1 && { type: codeHierarchy1 },
+    codeHierarchy2 && { type: codeHierarchy2 },
   ].filter(Boolean);
 
   const primaryCode = codeHierarchy1 || '';
@@ -354,20 +346,13 @@ export function translateToNeris(faJson, config = {}) {
     return canonicalizeUnitTimes(raw);
   }).filter(u => u.reported_unit_id || u.unit_neris_id);
 
-  // ── NERIS API Payload (final shape) ───────────────────────────────────────
+  // ── NERIS API Payload (final shape — NERIS schema-safe fields only) ────────
+  const incidentNumber = meta.nfirs_id || dispatch.incident_number || '';
   const payload = {
-    incident_id: meta.nfirs_id || dispatch.incident_number || '',
-
-    // Top-level fields (some NERIS API versions expect these flat)
-    narrative,
-    address: address.additional_info || '',
-    call_type: primaryCode,
-
     // base object
     base: {
-      incident_number: meta.nfirs_id || dispatch.incident_number || '',
-      narrative,
-      address: address.additional_info || '',
+      department_neris_id: config.entity_id || '',
+      incident_number: incidentNumber,
       investigation: base.investigation === true,
       action_taken: base.action_taken || '',
       property_type: base.property_type || undefined,
@@ -377,7 +362,7 @@ export function translateToNeris(faJson, config = {}) {
 
     // dispatch object
     dispatch: {
-      primary_type: primaryCode,
+      incident_number: incidentNumber,
 
       // PSAP call time fields — all sourced from user-entered DISPATCH_TIME
       // because FAST ATTACK has no CAD connection.
@@ -385,7 +370,6 @@ export function translateToNeris(faJson, config = {}) {
       call_arrival:    dispatchISO || undefined,
       call_answered:   dispatchISO || undefined,
       call_create:     dispatchISO || undefined,
-      dispatched_time: dispatchISO || undefined,
 
       incident_clear: clearISO || undefined,
 

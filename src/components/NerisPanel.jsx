@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
   CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp,
-  Download, RefreshCw, Eye, ArrowRight, Info
+  Download, RefreshCw, Eye, ArrowRight, Info, Copy, ClipboardCheck
 } from "lucide-react";
 
 const ENV_COLORS = { TEST: "bg-amber-100 text-amber-700", PROD: "bg-red-100 text-red-700" };
@@ -109,6 +109,7 @@ function DiffView({ changes }) {
 export default function NerisPanel({ form, units, responders }) {
   const [validationResult, setValidationResult] = useState(null);
   const [showDiff, setShowDiff] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Load NERIS config record (use first/only record per FD)
   const { data: configs = [] } = useQuery({
@@ -145,6 +146,12 @@ export default function NerisPanel({ form, units, responders }) {
     download(apiPayload, `neris_payload_${form.nfirs_id || "draft"}_${form.date || "nodate"}.json`);
   };
 
+  const handleCopyClean = () => {
+    navigator.clipboard.writeText(JSON.stringify(apiPayload, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   function download(data, filename) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -175,6 +182,10 @@ export default function NerisPanel({ form, units, responders }) {
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={handleExportNeris} className="text-xs text-blue-600 border-blue-300">
             <Download className="w-3 h-3 mr-1" /> NERIS Payload
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleCopyClean} className={`text-xs ${copied ? 'text-green-600 border-green-400' : 'text-purple-600 border-purple-300'}`}>
+            {copied ? <ClipboardCheck className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
+            {copied ? 'Copied!' : 'Copy Clean NERIS API Body'}
           </Button>
         </div>
       </div>
