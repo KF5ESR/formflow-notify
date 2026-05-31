@@ -340,7 +340,7 @@ export function translateToNeris(faJson, config = {}) {
     // on_scene: prefer per-unit time, fall back to incident FIRST_ON_SCENE_TIME
     const unitOnScene = u.on_scene_time || incidentOnSceneISO || '';
     const raw = {
-      reported_id_unit: u.unit_id || '',
+      reported_unit_id: u.unit_id || '',
       staffing: u.staffing != null && u.staffing !== '' ? Number(u.staffing) : undefined,
       // Canonical NERIS time keys:
       dispatch:          u.dispatch_time || '',
@@ -352,7 +352,7 @@ export function translateToNeris(faJson, config = {}) {
       if (raw[k] === '' || raw[k] == null) delete raw[k];
     });
     return canonicalizeUnitTimes(raw);
-  }).filter(u => u.reported_id_unit || u.unit_neris_id);
+  }).filter(u => u.reported_unit_id || u.unit_neris_id);
 
   // ── NERIS API Payload (final shape) ───────────────────────────────────────
   const payload = {
@@ -479,7 +479,7 @@ export function validateNerisPayload(payload) {
       legacyKeys.forEach(k => {
         if (u[k]) errors.push(`unit_responses[${i}] contains legacy key "${k}" — will be rejected by NERIS /validate (use canonical keys)`);
       });
-      if (!u.reported_id_unit && !u.unit_neris_id && !u.neris_id_unit) {
+      if (!u.reported_unit_id && !u.unit_neris_id && !u.neris_id_unit) {
         warnings.push(`unit_responses[${i}] has no unit ID`);
       }
     });
