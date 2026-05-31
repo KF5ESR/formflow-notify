@@ -11,7 +11,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { buildNerisPayload } from "@/utils/nerisPayload";
-import { translateToNeris, validateNerisPayload, diffLayers } from "@/utils/nerisTranslator";
+import { translateToNeris, validateNerisPayload, diffLayers, buildApiPayload } from "@/utils/nerisTranslator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -121,14 +121,18 @@ export default function NerisPanel({ form, units, responders }) {
   // Layer 1: FA Export JSON
   const faJson = useMemo(() => buildNerisPayload(form, units, responders), [form, units, responders]);
 
-  // Layer 2: NERIS API Payload
+  // Layer 2: Full NERIS payload (includes _dispatch_provenance for internal review)
   const nerisPayload = useMemo(() => translateToNeris(faJson, config), [faJson, config]);
+
+  // Layer 2b: Clean API payload — _provenance stripped, safe to POST
+  const apiPayload = useMemo(() => buildApiPayload(nerisPayload), [nerisPayload]);
 
   // Diff
   const diffs = useMemo(() => diffLayers(faJson, nerisPayload), [faJson, nerisPayload]);
 
   const handleValidate = () => {
-    const result = validateNerisPayload(nerisPayload);
+    // Validate the clean API payload (no internal fields)
+    const result = validateNerisPayload(apiPayload);
     setValidationResult(result);
   };
 
@@ -137,7 +141,8 @@ export default function NerisPanel({ form, units, responders }) {
   };
 
   const handleExportNeris = () => {
-    download(nerisPayload, `neris_payload_${form.nfirs_id || "draft"}_${form.date || "nodate"}.json`);
+    // Export the clean API payload — this is what gets POSTed to NERIS
+    download(apiPayload, `neris_payload_${form.nfirs_id || "draft"}_${form.date || "nodate"}.json`);
   };
 
   function download(data, filename) {
@@ -232,7 +237,13 @@ export default function NerisPanel({ form, units, responders }) {
 
       {/* JSON Layers */}
       <JsonBlock data={faJson} label="FAST ATTACK Export JSON" badge="Layer 1 — FA" />
-      <JsonBlock data={nerisPayload} label="NERIS API Payload" badge="Layer 2 — NERIS" defaultOpen={true} />
+      <JsonBlock data={nerisPayload} label="NERIS Full Payload (with provenance)" badge="Layer 2 — internal review" defaultOpen={false} />
+      <JsonBlock
+        data={apiPayload}
+        label="NERIS API Payload  —  sent to NERIS  (✓ provenance stripped)"
+        badge="Layer 2b"
+        defaultOpen={true}
+      />
 
       {/* Client-side Validate */}
       <div className="space-y-3">

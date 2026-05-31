@@ -413,6 +413,29 @@ export function translateToNeris(faJson, config = {}) {
 }
 
 // =============================================================================
+// API Payload Builder — strips internal/provenance fields before submission
+// =============================================================================
+
+/**
+ * Returns a clean payload safe to POST to the NERIS API.
+ * All _underscore-prefixed internal fields (e.g. _dispatch_provenance)
+ * are metadata for internal auditing only — they MUST NOT be sent
+ * in the request body or they will cause extra_forbidden errors.
+ *
+ * Usage:
+ *   const full     = translateToNeris(faJson, config);   // includes provenance
+ *   const apiBody  = buildApiPayload(full);              // clean — safe to POST
+ */
+export function buildApiPayload(payload) {
+  const clean = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (k.startsWith('_')) continue;  // strip internal fields
+    clean[k] = v;
+  }
+  return clean;
+}
+
+// =============================================================================
 // Client-side Payload Validation
 // =============================================================================
 
