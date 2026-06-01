@@ -328,14 +328,25 @@ export function translateToNeris(faJson, config = {}) {
   //
   const incidentOnSceneISO = dispatch.first_on_scene_time || '';
 
+  // Auto-staffing: count responders assigned to each unit
+  const personnel = faJson.personnel || [];
+  const autoStaffingMap = {};
+  personnel.forEach(p => {
+    if (p.assigned_unit) autoStaffingMap[p.assigned_unit] = (autoStaffingMap[p.assigned_unit] || 0) + 1;
+  });
+
   const unitResponses = apparatus.map(u => {
     // Time fallbacks: per-unit time → incident-level time → empty
     const unitDispatch = u.dispatch_time  || dispatchISO        || '';
     const unitOnScene  = u.on_scene_time  || incidentOnSceneISO || '';
     const unitClear    = u.clear_time     || clearISO           || '';
+    // Staffing: manual override wins; fall back to auto-count from assigned responders
+    const overrideStaffing = (u.staffing != null && u.staffing !== '') ? Number(u.staffing) : null;
+    const autoStaffing = autoStaffingMap[u.unit_id] || 0;
+    const resolvedStaffing = overrideStaffing !== null ? overrideStaffing : (autoStaffing || undefined);
     const raw = {
       reported_unit_id: u.unit_id || '',
-      staffing: (u.staffing != null && u.staffing !== '') ? Number(u.staffing) : undefined,
+      staffing: resolvedStaffing,
       // Canonical NERIS time keys:
       dispatch:          unitDispatch,
       enroute_to_scene:  u.enroute_time || '',

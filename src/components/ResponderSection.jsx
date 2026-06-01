@@ -7,9 +7,9 @@ import { Plus, Trash2, User } from "lucide-react";
 const ROLES = ["IC", "Primary", "Assist", "Driver", "Observer"];
 const RESPONSE_TYPES = ["POV", "Station/Apparatus", "Mutual Aid"];
 
-const EMPTY_RESPONDER = { name: "", role: "Primary", response_type: "POV" };
+const EMPTY_RESPONDER = { name: "", role: "Primary", response_type: "POV", assigned_unit: "" };
 
-function ResponderRow({ responder, index, onChange, onRemove }) {
+function ResponderRow({ responder, index, onChange, onRemove, unitIds }) {
   const set = (key, val) => onChange(index, { ...responder, [key]: val });
 
   return (
@@ -38,6 +38,15 @@ function ResponderRow({ responder, index, onChange, onRemove }) {
           <SelectContent>{RESPONSE_TYPES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
         </Select>
       </div>
+      <div className="w-32">
+        <Select value={responder.assigned_unit || "__none"} onValueChange={(v) => set("assigned_unit", v === "__none" ? "" : v)}>
+          <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Unit" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">—</SelectItem>
+            {unitIds.map((id) => <SelectItem key={id} value={id}>{id}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
       <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(index)} className="w-7 h-7 text-slate-400 hover:text-red-500 shrink-0">
         <Trash2 className="w-3.5 h-3.5" />
       </Button>
@@ -45,7 +54,8 @@ function ResponderRow({ responder, index, onChange, onRemove }) {
   );
 }
 
-export default function ResponderSection({ responders, onChange }) {
+export default function ResponderSection({ responders, onChange, units = [] }) {
+  const unitIds = units.map(u => u.unit_id).filter(Boolean);
   const add = () => onChange([...responders, { ...EMPTY_RESPONDER }]);
 
   const update = (index, updated) => {
@@ -58,15 +68,16 @@ export default function ResponderSection({ responders, onChange }) {
 
   return (
     <div className="space-y-2">
-      <div className="hidden md:grid grid-cols-[auto_1fr_130px_176px_auto] gap-3 px-3 text-xs text-slate-400 font-medium">
+      <div className="hidden md:grid grid-cols-[auto_1fr_130px_176px_128px_auto] gap-3 px-3 text-xs text-slate-400 font-medium">
         <span className="w-8" />
         <span>Name</span>
         <span>Role</span>
         <span>Response Type</span>
+        <span>Assigned Unit</span>
         <span className="w-7" />
       </div>
       {responders.map((r, i) => (
-        <ResponderRow key={i} responder={r} index={i} onChange={update} onRemove={remove} />
+        <ResponderRow key={i} responder={r} index={i} onChange={update} onRemove={remove} unitIds={unitIds} />
       ))}
       <Button type="button" variant="outline" onClick={add} className="w-full border-dashed text-slate-500 hover:text-slate-700">
         <Plus className="w-4 h-4 mr-2" /> Add Responder

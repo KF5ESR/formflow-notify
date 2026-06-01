@@ -113,6 +113,7 @@ export function buildNerisPayload(form, units, responders) {
     name: r.name || "",
     role: r.role || "Primary",
     response_type: r.response_type || "POV",
+    assigned_unit: r.assigned_unit || "",
   }));
 
   return {

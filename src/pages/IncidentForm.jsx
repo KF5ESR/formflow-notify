@@ -382,7 +382,7 @@ export default function IncidentForm() {
                 <SelectContent>{FD_OPTIONS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <UnitSection units={units} onChange={setUnits} globalDispatch={form.dispatch_time} />
+            <UnitSection units={units} onChange={setUnits} globalDispatch={form.dispatch_time} responders={responders} />
           </Section>
 
           {/* Responders */}
@@ -417,7 +417,7 @@ export default function IncidentForm() {
                 />
               </div>
             </div>
-            <ResponderSection responders={responders} onChange={setResponders} />
+            <ResponderSection responders={responders} onChange={setResponders} units={units} />
           </Section>
 
           {/* Mutual Aid */}
