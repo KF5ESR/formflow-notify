@@ -329,16 +329,18 @@ export function translateToNeris(faJson, config = {}) {
   const incidentOnSceneISO = dispatch.first_on_scene_time || '';
 
   const unitResponses = apparatus.map(u => {
-    // on_scene: prefer per-unit time, fall back to incident FIRST_ON_SCENE_TIME
-    const unitOnScene = u.on_scene_time || incidentOnSceneISO || '';
+    // Time fallbacks: per-unit time → incident-level time → empty
+    const unitDispatch = u.dispatch_time  || dispatchISO        || '';
+    const unitOnScene  = u.on_scene_time  || incidentOnSceneISO || '';
+    const unitClear    = u.clear_time     || clearISO           || '';
     const raw = {
       reported_unit_id: u.unit_id || '',
-      staffing: u.staffing != null && u.staffing !== '' ? Number(u.staffing) : undefined,
+      staffing: (u.staffing != null && u.staffing !== '') ? Number(u.staffing) : undefined,
       // Canonical NERIS time keys:
-      dispatch:          u.dispatch_time || '',
+      dispatch:          unitDispatch,
       enroute_to_scene:  u.enroute_time || '',
-      on_scene:          unitOnScene,          // FIRST_ON_SCENE_TIME → here
-      unit_clear:        u.clear_time || '',
+      on_scene:          unitOnScene,
+      unit_clear:        unitClear,
     };
     Object.keys(raw).forEach(k => {
       if (raw[k] === '' || raw[k] == null) delete raw[k];
@@ -353,6 +355,7 @@ export function translateToNeris(faJson, config = {}) {
     base: {
       department_neris_id: config.entity_id || '',
       incident_number: incidentNumber,
+      location: address,
       investigation: base.investigation === true,
       action_taken: base.action_taken || '',
       property_type: base.property_type || undefined,
@@ -363,6 +366,7 @@ export function translateToNeris(faJson, config = {}) {
     // dispatch object
     dispatch: {
       incident_number: incidentNumber,
+      location: address,
 
       // PSAP call time fields — all sourced from user-entered DISPATCH_TIME
       // because FAST ATTACK has no CAD connection.
@@ -435,9 +439,8 @@ export function validateNerisPayload(payload) {
   if (!payload) { errors.push('Payload is empty'); return { valid: false, errors, warnings }; }
 
   // Required
-  if (!payload.incident_id) errors.push('incident_id is missing — NFIRS ID required');
-  if (!payload.narrative) warnings.push('narrative is empty');
-  if (!payload.call_type) errors.push('call_type is missing — incident type not resolved');
+  if (!payload.base?.incident_number) errors.push('base.incident_number is missing — NFIRS ID required');
+  if (!payload.base?.department_neris_id) warnings.push('base.department_neris_id is empty — set entity_id in NerisConfig');
   if (!payload.incident_types || payload.incident_types.length === 0) errors.push('incident_types array is empty');
 
   // Incident type code format
@@ -445,9 +448,7 @@ export function validateNerisPayload(payload) {
     if (!t.type || !/\|\|/.test(t.type)) {
       errors.push(`incident_types[${i}].type "${t.type || ''}" is not a valid NERIS hierarchy (expected X||Y||Z format)`);
     }
-    if (!t.code) {
-      errors.push(`incident_types[${i}].code is missing`);
-    }
+    // no .code field expected in clean payload — type hierarchy is sufficient
   });
 
   // Dispatch
