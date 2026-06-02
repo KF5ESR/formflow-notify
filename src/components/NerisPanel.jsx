@@ -110,48 +110,103 @@ function DiffView({ changes }) {
 }
 
 function ValueSetStatus() {
-  const [status, setStatus] = useStateVS({ loading: false, incidentCount: null, actionCount: null, error: null, ageMs: null });
+  const [status, setStatus] = useStateVS({
+    loading: false, incidentCount: null, actionCount: null, error: null, fetchedAt: null
+  });
 
   const load = useCallback(async (bust = false) => {
     if (bust) clearCache();
     setStatus(s => ({ ...s, loading: true, error: null }));
-    const t0 = Date.now();
-    const [types, actions] = await Promise.all([getIncidentTypeOptions(), getActionTacticOptions()]);
-    setStatus({ loading: false, incidentCount: types.length, actionCount: actions.length, error: null, ageMs: Date.now() - t0 });
+    try {
+      const [types, actions] = await Promise.all([getIncidentTypeOptions(), getActionTacticOptions()]);
+      setStatus({ loading: false, incidentCount: types.length, actionCount: actions.length, error: null, fetchedAt: new Date() });
+    } catch (e) {
+      setStatus(s => ({ ...s, loading: false, error: e.message }));
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const age = getCacheAge('incident_types');
-  const ageLabel = age == null ? '—' : age < 60000 ? `${Math.round(age/1000)}s ago` : `${Math.round(age/60000)}m ago`;
+  const ageMs = getCacheAge('incident_types');
+  const ageLabel = ageMs == null ? '—'
+    : ageMs < 60000 ? `${Math.round(ageMs / 1000)}s ago`
+    : `${Math.round(ageMs / 60000)}m ago`;
 
   return (
-    <div className="flex items-center gap-3 flex-wrap text-xs bg-slate-900 text-slate-300 rounded-lg px-3 py-2">
-      <a href={GITHUB_REFS.repo} target="_blank" rel="noopener noreferrer"
-         className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors">
-        <Github className="w-3.5 h-3.5" />
-        <span className="font-mono">ulfsri/neris-framework</span>
-      </a>
-      <span className="text-slate-600">|</span>
-      {status.loading ? (
-        <span className="flex items-center gap-1 text-slate-400"><RefreshCw className="w-3 h-3 animate-spin" /> Loading value sets…</span>
-      ) : status.error ? (
-        <span className="text-red-400">{status.error}</span>
-      ) : (
-        <>
+    <div className="rounded-lg border border-slate-700 bg-slate-900 overflow-hidden">
+      {/* Layer boundary notice */}
+      <div className="flex items-start gap-2 px-3 py-2 bg-amber-950/60 border-b border-amber-800/40">
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+        <p className="text-xs text-amber-300 leading-relaxed">
+          <strong className="text-amber-200">Layer boundary:</strong>{" "}
+          GitHub value sets are used for code lists and dropdown choices only.
+          The final API body is built against the{" "}
+          <strong className="text-amber-200">NERIS API contract</strong> and verified by{" "}
+          <code className="bg-amber-900/50 text-amber-200 px-1 rounded">/validate</code>.
+          The GitHub framework module field names (e.g. <code className="bg-amber-900/50 text-amber-200 px-1 rounded">incident_final_type</code>)
+          do not override the validated API payload shape (e.g.{" "}
+          <code className="bg-amber-900/50 text-amber-200 px-1 rounded">incident_types[&#123;type&#125;]</code>).
+        </p>
+      </div>
+
+      {/* Status row */}
+      <div className="flex items-center gap-3 flex-wrap px-3 py-2 text-xs text-slate-300">
+        {/* GitHub source */}
+        <div className="flex items-center gap-1.5">
+          <Github className="w-3.5 h-3.5 text-slate-400" />
+          <a href={GITHUB_REFS.repo} target="_blank" rel="noopener noreferrer"
+             className="font-mono text-slate-400 hover:text-white transition-colors underline-offset-2 hover:underline">
+            ulfsri/neris-framework
+          </a>
+          <span className="text-slate-600 text-xs">— value sets only</span>
+        </div>
+
+        <span className="text-slate-700">|</span>
+
+        {/* Counts / loading / error */}
+        {status.loading ? (
+          <span className="flex items-center gap-1 text-slate-400">
+            <RefreshCw className="w-3 h-3 animate-spin" /> Fetching…
+          </span>
+        ) : status.error ? (
+          <span className="flex items-center gap-1 text-red-400">
+            <XCircle className="w-3 h-3" /> {status.error}
+          </span>
+        ) : status.incidentCount !== null ? (
           <span className="flex items-center gap-1 text-green-400">
             <Database className="w-3 h-3" />
             {status.incidentCount} incident types · {status.actionCount} action/tactics
           </span>
+        ) : null}
+
+        {/* Cache age */}
+        {!status.loading && ageMs != null && (
           <span className="flex items-center gap-1 text-slate-500">
             <Clock className="w-3 h-3" /> cached {ageLabel}
           </span>
-        </>
-      )}
-      <button onClick={() => load(true)}
-              className="ml-auto flex items-center gap-1 text-slate-400 hover:text-white transition-colors">
-        <RefreshCw className="w-3 h-3" /> Refresh
-      </button>
+        )}
+
+        {/* Fetch timestamp */}
+        {status.fetchedAt && (
+          <span className="text-slate-600 text-xs">
+            fetched {status.fetchedAt.toLocaleTimeString()}
+          </span>
+        )}
+
+        <span className="text-slate-700">|</span>
+
+        {/* API contract source */}
+        <span className="flex items-center gap-1 text-blue-400">
+          <CheckCircle className="w-3 h-3" />
+          Payload contract: NERIS API <code className="bg-slate-800 px-1 rounded">/validate</code>
+        </span>
+
+        {/* Refresh button */}
+        <button onClick={() => load(true)}
+                className="ml-auto flex items-center gap-1 text-slate-500 hover:text-white transition-colors">
+          <RefreshCw className="w-3 h-3" /> Refresh
+        </button>
+      </div>
     </div>
   );
 }
