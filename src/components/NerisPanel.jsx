@@ -17,9 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useState as useStateVS, useEffect, useCallback } from "react";
+import { getIncidentTypeOptions, getActionTacticOptions, GITHUB_REFS, clearCache, getCacheAge } from "@/utils/nerisValueSets";
 import {
   CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp,
-  Download, RefreshCw, Eye, ArrowRight, Info, Copy, ClipboardCheck
+  Download, RefreshCw, Eye, ArrowRight, Info, Copy, ClipboardCheck,
+  Github, Database, Clock
 } from "lucide-react";
 
 const ENV_COLORS = { TEST: "bg-amber-100 text-amber-700", PROD: "bg-red-100 text-red-700" };
@@ -102,6 +105,53 @@ function DiffView({ changes }) {
           <code className="text-green-700 bg-green-50 px-1 rounded">{c.neris}</code>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ValueSetStatus() {
+  const [status, setStatus] = useStateVS({ loading: false, incidentCount: null, actionCount: null, error: null, ageMs: null });
+
+  const load = useCallback(async (bust = false) => {
+    if (bust) clearCache();
+    setStatus(s => ({ ...s, loading: true, error: null }));
+    const t0 = Date.now();
+    const [types, actions] = await Promise.all([getIncidentTypeOptions(), getActionTacticOptions()]);
+    setStatus({ loading: false, incidentCount: types.length, actionCount: actions.length, error: null, ageMs: Date.now() - t0 });
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const age = getCacheAge('incident_types');
+  const ageLabel = age == null ? '—' : age < 60000 ? `${Math.round(age/1000)}s ago` : `${Math.round(age/60000)}m ago`;
+
+  return (
+    <div className="flex items-center gap-3 flex-wrap text-xs bg-slate-900 text-slate-300 rounded-lg px-3 py-2">
+      <a href={GITHUB_REFS.repo} target="_blank" rel="noopener noreferrer"
+         className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors">
+        <Github className="w-3.5 h-3.5" />
+        <span className="font-mono">ulfsri/neris-framework</span>
+      </a>
+      <span className="text-slate-600">|</span>
+      {status.loading ? (
+        <span className="flex items-center gap-1 text-slate-400"><RefreshCw className="w-3 h-3 animate-spin" /> Loading value sets…</span>
+      ) : status.error ? (
+        <span className="text-red-400">{status.error}</span>
+      ) : (
+        <>
+          <span className="flex items-center gap-1 text-green-400">
+            <Database className="w-3 h-3" />
+            {status.incidentCount} incident types · {status.actionCount} action/tactics
+          </span>
+          <span className="flex items-center gap-1 text-slate-500">
+            <Clock className="w-3 h-3" /> cached {ageLabel}
+          </span>
+        </>
+      )}
+      <button onClick={() => load(true)}
+              className="ml-auto flex items-center gap-1 text-slate-400 hover:text-white transition-colors">
+        <RefreshCw className="w-3 h-3" /> Refresh
+      </button>
     </div>
   );
 }
@@ -202,6 +252,9 @@ export default function NerisPanel({ form, units, responders }) {
         <ArrowRight className="w-3 h-3" />
         <span className="bg-slate-100 px-2 py-1 rounded">Validate → Submit</span>
       </div>
+
+      {/* GitHub value sets status */}
+      <ValueSetStatus />
 
       {/* PSAP time source banner */}
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
