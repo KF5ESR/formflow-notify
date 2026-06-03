@@ -115,10 +115,6 @@ export default function AdminDepartments() {
 
   const STATUS_COLOR = { ACTIVE: "bg-green-100 text-green-700", INACTIVE: "bg-slate-100 text-slate-500", SUSPENDED: "bg-red-100 text-red-600" };
 
-  if (!isSuperAdmin) return (
-    <div className="min-h-screen flex items-center justify-center text-slate-500">Access denied — Super Admin only.</div>
-  );
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
