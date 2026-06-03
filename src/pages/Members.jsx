@@ -23,6 +23,12 @@ export default function Members() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", badge_number: "", role: "Firefighter", status: "Active" });
 
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
+  const [selectedDeptId, setSelectedDeptId] = useState(departmentId || "");
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: () => base44.entities.Department.list(),
+  });
 
   const { data: members = [] } = useQuery({
     queryKey: ["members", departmentId],
@@ -30,7 +36,7 @@ export default function Members() {
   });
 
   const create = useMutation({
-    mutationFn: (data) => base44.entities.Member.create({ ...data, department_id: departmentId }),
+    mutationFn: (data) => base44.entities.Member.create({ ...data, department_id: selectedDeptId || departmentId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       setForm({ name: "", email: "", phone: "", badge_number: "", role: "Firefighter", status: "Active" });
@@ -60,10 +66,25 @@ export default function Members() {
         )}
 
         {showForm && canManage && (
-          <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Name *</Label>
+           <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+               <div>
+                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Department *</Label>
+                 <Select value={selectedDeptId} onValueChange={setSelectedDeptId}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select department" />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {departments.map((dept) => (
+                       <SelectItem key={dept.id} value={dept.id}>
+                         {dept.department_name}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
+               <div>
+                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Name *</Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
