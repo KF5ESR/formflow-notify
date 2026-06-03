@@ -69,7 +69,7 @@ function OnboardingChecklist({ department, nerisConfig }) {
 export default function AdminDepartmentConfig() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const [configForm, setConfigForm] = useState(EMPTY_CONFIG);
   const [existingConfigId, setExistingConfigId] = useState(null);
