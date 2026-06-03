@@ -343,7 +343,7 @@ export function translateToNeris(faJson, config = {}) {
     // Staffing: manual override wins; fall back to auto-count from assigned responders
     const overrideStaffing = (u.staffing != null && u.staffing !== '') ? Number(u.staffing) : null;
     const autoStaffing = autoStaffingMap[u.unit_id] || 0;
-    const resolvedStaffing = overrideStaffing !== null ? overrideStaffing : (autoStaffing || undefined);
+    const resolvedStaffing = overrideStaffing !== null ? overrideStaffing : (autoStaffing > 0 ? autoStaffing : undefined);
     const raw = {
       reported_unit_id: u.unit_id || '',
       staffing: resolvedStaffing,
@@ -354,7 +354,9 @@ export function translateToNeris(faJson, config = {}) {
       unit_clear:        unitClear,
     };
     Object.keys(raw).forEach(k => {
-      if (raw[k] === '' || raw[k] == null) delete raw[k];
+      // Keep staffing even if 0; strip only empty strings and null/undefined
+      if (k === 'staffing') { if (raw[k] == null) delete raw[k]; }
+      else if (raw[k] === '' || raw[k] == null) delete raw[k];
     });
     return canonicalizeUnitTimes(raw);
   }).filter(u => u.reported_unit_id || u.unit_neris_id);

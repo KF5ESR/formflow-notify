@@ -37,13 +37,17 @@ export const TYPE_RESPONSE_MAP = {
   "Other":                                                { code: "OTHER",                                                          label: "Other" },
 };
 
-/** Convert "HH:MM" + date string to ISO datetime string */
+/** Convert "HH:MM" + date string to ISO datetime string.
+ *  Treats dateStr as a LOCAL calendar date (YYYY-MM-DD) — not UTC —
+ *  so "2026-05-29" + "13:00" on CDT (UTC-5) → "2026-05-29T18:00:00.000Z".
+ */
 function toISO(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   try {
+    const [year, month, day] = dateStr.split("-").map(Number);
     const [h, m] = timeStr.split(":").map(Number);
-    const d = new Date(dateStr);
-    d.setHours(h, m, 0, 0);
+    // Construct using local year/month/day to avoid UTC-midnight shift
+    const d = new Date(year, month - 1, day, h, m, 0, 0);
     return d.toISOString();
   } catch (_) { return null; }
 }
