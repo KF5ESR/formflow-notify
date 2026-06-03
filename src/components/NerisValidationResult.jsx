@@ -47,6 +47,33 @@ export default function NerisValidationResult({ result }) {
         {validated_at && <div><span className="font-medium">Validated at:</span> {new Date(validated_at).toLocaleString()}</div>}
       </div>
 
+      {/* 401 diagnostic guidance */}
+      {!success && http_status === 401 && (
+        <div className="border-t border-red-200 bg-red-50 px-4 py-3 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-red-700">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            HTTP 401 — NERIS rejected the token. This is an Apps Script auth issue, not a payload issue.
+          </div>
+          <ol className="text-xs text-red-700 space-y-1.5 list-decimal list-inside">
+            <li>
+              <strong>Check that <code className="bg-red-100 px-1 rounded">handleBase44Validate_</code> is NOT hand-rolling its own token lookup.</strong>
+              {" "}It must delegate to the same internal helper that <code className="bg-red-100 px-1 rounded">nerisValidateIncidentById_</code> calls — e.g. <code className="bg-red-100 px-1 rounded">nerisRemoteValidate_(body, cfg)</code>.
+            </li>
+            <li>
+              <strong>If it does call <code className="bg-red-100 px-1 rounded">getNerisToken_(cfg)</code> directly</strong>, verify the token it returns is not expired.
+              Open Apps Script → Run <code className="bg-red-100 px-1 rounded">getNerisToken_(getNerisConfig_())</code> manually and Logger.log the result.
+            </li>
+            <li>
+              <strong>Check the environment.</strong> Base44 is sending <code className="bg-red-100 px-1 rounded">environment: "{environment}"</code>.
+              Confirm your Apps Script config helper reads the correct TEST vs PROD credentials for that environment.
+            </li>
+            <li>
+              <strong>Compare headers.</strong> The working Forms path succeeds — add a <code className="bg-red-100 px-1 rounded">Logger.log(token)</code> inside <code className="bg-red-100 px-1 rounded">handleBase44Validate_</code> and compare to the token used by the Forms path to see if they differ.
+            </li>
+          </ol>
+        </div>
+      )}
+
       {/* Response body toggle */}
       {response_body && (
         <div className="border-t border-slate-200">
