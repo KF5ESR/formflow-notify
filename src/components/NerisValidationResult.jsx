@@ -74,17 +74,20 @@ export default function NerisValidationResult({ result }) {
         </div>
       )}
 
-      {/* Response body toggle */}
+      {/* Response body — always open on 401 so NERIS error detail is immediately visible */}
       {response_body && (
         <div className="border-t border-slate-200">
           <button
             type="button"
             onClick={() => setShowBody(!showBody)}
             className="w-full flex items-center justify-between px-4 py-2 bg-white/50 hover:bg-white/80 text-xs text-slate-600 transition-colors">
-            <span className="font-medium">Response body</span>
-            {showBody ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            <span className="font-medium">
+              Response body
+              {http_status === 401 && <span className="ml-2 text-red-600 font-semibold">(NERIS error detail — check this for token/auth reason)</span>}
+            </span>
+            {(showBody || http_status === 401) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
-          {showBody && (
+          {(showBody || http_status === 401) && (
             <pre className="text-xs font-mono bg-slate-900 text-green-300 p-3 overflow-auto max-h-48 whitespace-pre-wrap">
               {typeof response_body === "string" ? response_body : JSON.stringify(response_body, null, 2)}
             </pre>

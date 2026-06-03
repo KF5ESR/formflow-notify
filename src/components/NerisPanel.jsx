@@ -517,100 +517,98 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
           <summary className="px-3 py-2 bg-slate-50 cursor-pointer font-medium text-slate-700 hover:bg-slate-100">
             Apps Script <code>doPost</code> handler template — add this branch to your WebApp
           </summary>
-          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// ─── STRATEGY ────────────────────────────────────────────────────────────────
-// Do NOT duplicate the NERIS auth/token/fetch logic.
-// Instead, reuse the same internal helper that nerisValidateIncidentById_() calls.
-//
-// How nerisValidateIncidentById_() works (look it up in your script):
-//   1. It calls shapePayloadForRemoteValidate_(body) to clean the body.
-//   2. It calls some internal helper — e.g. nerisRemoteValidate_(body, cfg)
-//      or nerisApiPost_(path, body, cfg) — that already handles:
-//        • reading NERIS_BASE_URL / NERIS_ENTITY_ID from Script Properties / Config sheet
-//        • obtaining the Bearer token via getNerisToken_(cfg)
-//        • calling UrlFetchApp with the correct headers
-//   3. It returns the HTTP result.
-//
-// Your handleBase44Validate_ should call THAT same helper — not roll its own.
-// ─────────────────────────────────────────────────────────────────────────────
+          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// ─── CORRECTED handleBase44Validate_ ─────────────────────────────────────────
+          // Uses the SAME token pattern as the working FA NERIS calls:
+          //   cfg        = getNerisConfig()          (no underscore — matches your script)
+          //   tokenInfo  = getNerisToken_(cfg)
+          //   token      = tokenInfo && tokenInfo.token
+          //   headers include Accept: 'application/json'
+          //
+          // The 401 response body is returned so you can see the exact NERIS error message.
+          // ─────────────────────────────────────────────────────────────────────────────
 
-// Step 1: Find the validate helper inside nerisValidateIncidentById_().
-// It will look something like one of these — check your actual script:
-//
-//   nerisRemoteValidate_(body, cfg)           ← most likely
-//   nerisApiPost_('/incident/'+id+'/validate', body, cfg)
-//   postToNeris_(url, body, token)
-//
-// Once you know the real name, use it in handleBase44Validate_ below.
+          function doPost(e) {
+          // --- Base44 validate branch ---
+          try {
+          var raw = e && e.postData && e.postData.contents;
+          if (raw) {
+          var data = JSON.parse(raw);
+          if (data && data.action === 'validate') {
+          return handleBase44Validate_(data);
+          }
+          }
+          } catch(_) { /* not a Base44 JSON post — fall through */ }
+          // --- end Base44 branch ---
 
-// ─── ADD THIS BLOCK near the top of your existing doPost(e) ──────────────────
-function doPost(e) {
-  // --- Base44 validate branch ---
-  try {
-    if (e && e.postData && e.postData.contents) {
-      var data = JSON.parse(e.postData.contents);
-      if (data && data.action === 'validate') {
-        return handleBase44Validate_(data);
-      }
-    }
-  } catch(_) { /* not a Base44 JSON post — fall through */ }
-  // --- end Base44 branch ---
+          // ... your existing doPost logic continues unchanged ...
+          }
 
-  // ... your existing doPost logic continues unchanged ...
-}
+          function handleBase44Validate_(data) {
+          var validated_at = new Date().toISOString();
 
-function handleBase44Validate_(data) {
-  var validated_at = new Date().toISOString();
-  var body = data.body || {};
+          try {
+          var cfg = getNerisConfig();   // matches your FA NERIS tools (no underscore)
 
-  // Step 1: shape the body exactly as the Forms path does
-  shapePayloadForRemoteValidate_(body);
+          var entityId = String((data.entity_id || cfg.NERIS_ENTITY_ID || '')).trim();
+          var base     = String(cfg.NERIS_BASE_URL || '').replace(/\\/+$/, '');
 
-  // Step 2: delegate to the SAME internal validate helper used by
-  // nerisValidateIncidentById_() — this reuses all existing auth/token/URL logic.
-  //
-  // *** REPLACE the call below with whatever function nerisValidateIncidentById_
-  //     actually calls internally. Common patterns: ***
-  //
-  //   var cfg = getNerisConfig_();                          // if needed
-  //   var result = nerisRemoteValidate_(body, cfg);         // most likely
-  //   -- OR --
-  //   var result = nerisApiPost_('validate', body, cfg);
-  //
-  // The result object should have .code (HTTP status) and .body (parsed response).
-  // Adjust the field names below to match what your helper actually returns.
+          if (!entityId) return jsonResponse_({ success: false, http_status: null, validated_at: validated_at, error: 'Missing entity_id / NERIS_ENTITY_ID' });
+          if (!base)     return jsonResponse_({ success: false, http_status: null, validated_at: validated_at, error: 'Missing NERIS_BASE_URL' });
 
-  try {
-    var cfg = getNerisConfig_();                         // ← use your real config helper name
-    var result = nerisRemoteValidate_(body, cfg);        // ← use your real validate helper name
+          var body = data.body || {};
+          if (typeof body !== 'object') body = {};
 
-    var code = result.code || result.http_status || 0;
-    var respBody = result.body || result.response_body || result;
-    var success = code >= 200 && code < 300;
+          // Shape exactly as the Forms path does
+          if (typeof shapePayloadForRemoteValidate_ === 'function') {
+          shapePayloadForRemoteValidate_(body);
+          }
 
-    return jsonResponse_({
-      success: success,
-      http_status: code,
-      validated_at: validated_at,
-      response_body: respBody,
-      request_body_snapshot: body,
-      error: success ? null : (respBody && respBody.detail) || ('HTTP ' + code)
-    });
-  } catch(err) {
-    return jsonResponse_({
-      success: false,
-      http_status: null,
-      validated_at: validated_at,
-      response_body: null,
-      request_body_snapshot: body,
-      error: String(err)
-    });
-  }
-}
+          var endpoint  = base + '/incident/' + encodeURIComponent(entityId) + '/validate';
+          var tokenInfo = getNerisToken_(cfg);           // same as FA NERIS tools
+          var token     = tokenInfo && tokenInfo.token;  // same extraction as working calls
+          token = String(token || '').trim();
 
-// ─── How to find the right helper name ───────────────────────────────────────
-// In your Apps Script editor, search for "nerisValidateIncidentById_" and look
-// at what it calls after shapePayloadForRemoteValidate_().  Use that exact
-// function name in the two marked lines above.  That's it — no new auth code.`}</pre>
+          if (!token) return jsonResponse_({ success: false, http_status: null, validated_at: validated_at, endpoint_used: endpoint, error: 'NERIS token unavailable — check getNerisToken_() return value' });
+
+          var res = UrlFetchApp.fetch(endpoint, {
+          method: 'post',
+          muteHttpExceptions: true,
+          headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          },
+          payload: JSON.stringify(body),
+          });
+
+          var code = res.getResponseCode();
+          var txt  = res.getContentText();
+          var responseBody;
+          try { responseBody = txt ? JSON.parse(txt) : ''; } catch(_) { responseBody = txt; }
+
+          var success = code >= 200 && code < 300;
+          return jsonResponse_({
+          success:               success,
+          http_status:           code,
+          validated_at:          validated_at,
+          endpoint_used:         endpoint,
+          response_body:         responseBody,   // always returned — shows NERIS error detail on 401
+          request_body_snapshot: body,
+          environment_requested: data.environment || null,
+          environment_used:      cfg.NERIS_ENV   || null,
+          error: success ? null : (responseBody && (responseBody.detail || responseBody.message)) || ('HTTP ' + code),
+          });
+
+          } catch(err) {
+          return jsonResponse_({
+          success:               false,
+          http_status:           null,
+          validated_at:          validated_at,
+          error:                 'Apps Script exception: ' + String(err),
+          request_body_snapshot: (data && data.body) ? data.body : null,
+          });
+          }
+          }`}</pre>
         </details>
 
         {/* Client-side result */}
