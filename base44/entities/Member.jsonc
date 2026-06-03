@@ -10,6 +10,14 @@
       "type": "string",
       "title": "Full Name"
     },
+    "email": {
+      "type": "string",
+      "title": "Email"
+    },
+    "phone": {
+      "type": "string",
+      "title": "Phone"
+    },
     "badge_number": {
       "type": "string",
       "title": "Badge Number"

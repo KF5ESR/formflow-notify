@@ -20,7 +20,7 @@ export default function Members() {
   const { scopeFilter, departmentId } = useDepartment();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", badge_number: "", role: "Firefighter", status: "Active" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", badge_number: "", role: "Firefighter", status: "Active" });
 
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
 
@@ -33,7 +33,7 @@ export default function Members() {
     mutationFn: (data) => base44.entities.Member.create({ ...data, department_id: departmentId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      setForm({ name: "", badge_number: "", role: "Firefighter", status: "Active" });
+      setForm({ name: "", email: "", phone: "", badge_number: "", role: "Firefighter", status: "Active" });
       setShowForm(false);
     },
   });
@@ -68,6 +68,23 @@ export default function Members() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Full name"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Email</Label>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Phone</Label>
+                <Input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="(555) 123-4567"
                 />
               </div>
               <div>
@@ -125,9 +142,11 @@ export default function Members() {
             <TableHeader className="bg-slate-50">
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Badge</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Badge</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
                 {canManage && <TableHead className="text-right">Action</TableHead>}
               </TableRow>
             </TableHeader>
@@ -135,6 +154,8 @@ export default function Members() {
               {members.map((m) => (
                 <TableRow key={m.id} className="hover:bg-slate-50">
                   <TableCell className="font-medium text-slate-900">{m.name}</TableCell>
+                  <TableCell className="text-slate-600 text-sm">{m.email || "—"}</TableCell>
+                  <TableCell className="text-slate-600 text-sm">{m.phone || "—"}</TableCell>
                   <TableCell className="text-slate-600">{m.badge_number || "—"}</TableCell>
                   <TableCell className="text-slate-600">{m.role}</TableCell>
                   <TableCell>
