@@ -496,21 +496,90 @@ export default function NerisPanel({ form, units, responders }) {
           <div className="text-slate-500 space-y-1">
             <div>
               <strong className="text-slate-600">Validation Route:</strong>{" "}
-              Base44 → Apps Script Proxy → NERIS{" "}
+              Base44 → Apps Script WebApp → NERIS{" "}
               <code className="bg-slate-100 px-1 rounded">POST /incident/{"{entity_id}"}/validate</code>
             </div>
             <div>
-              Body sent: exact <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> output — 
-              provenance stripped, no reshaping in the panel.
-              Apps Script runs <code className="bg-slate-100 px-1 rounded">shapePayloadForRemoteValidate_()</code> as a final safety pass before calling NERIS.
-              No NERIS token is ever held or exposed by Base44.
+              Body sent: exact <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> output — no reshaping in the panel.
+              The Apps Script WebApp must have a <code className="bg-slate-100 px-1 rounded">doPost</code> branch that handles{" "}
+              <code className="bg-slate-100 px-1 rounded">action: "validate"</code> with a provided{" "}
+              <code className="bg-slate-100 px-1 rounded">body</code> key, runs{" "}
+              <code className="bg-slate-100 px-1 rounded">shapePayloadForRemoteValidate_(body)</code>, then POSTs to NERIS.
+            </div>
+            <div className="text-amber-600 font-medium">
+              ⚠ The standard FA WebApp only validates by sheet row (via <code className="bg-amber-50 px-1 rounded">nerisValidateIncidentById_</code>).
+              You must add a <code className="bg-amber-50 px-1 rounded">doPost action:"validate"</code> branch that accepts and forwards an externally-provided clean body.
+              See the handler template below.
             </div>
             <div>
-              Configure <strong>Apps Script Validate URL</strong> in NerisConfig to activate.
-              The Apps Script WebApp handles NERIS OAuth and forwards to the correct environment.
+              No NERIS token is ever held or exposed by Base44.
             </div>
           </div>
         </div>
+
+        {/* Apps Script doPost handler template */}
+        <details className="border border-slate-200 rounded-lg overflow-hidden text-xs">
+          <summary className="px-3 py-2 bg-slate-50 cursor-pointer font-medium text-slate-700 hover:bg-slate-100">
+            Apps Script <code>doPost</code> handler template — add this branch to your WebApp
+          </summary>
+          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// Add to your Apps Script doPost(e) — handles Base44 validate action
+// Accepts: { action:"validate", entity_id, environment, incident_id, body:{...} }
+// Returns JSON: { success, http_status, validated_at, endpoint_used, response_body, request_body_snapshot }
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    if (data.action === 'validate') {
+      return handleBase44Validate_(data);
+    }
+    // ... your existing doPost branches ...
+  } catch(err) {
+    return jsonResponse_({ ok: false, error: String(err) });
+  }
+}
+
+function handleBase44Validate_(data) {
+  var validated_at = new Date().toISOString();
+  var cfg = getNerisConfig();
+  var entityId = data.entity_id || cfg.NERIS_ENTITY_ID || '';
+  var body = data.body || {};
+
+  // Final safety cleanup — strips extra_forbidden fields, canonicalizes unit times
+  shapePayloadForRemoteValidate_(body);
+
+  var base = (cfg.NERIS_BASE_URL || '').replace(/\\/+$/, '');
+  var url = base + '/incident/' + encodeURIComponent(entityId) + '/validate';
+  var token = getNerisToken_(cfg).token;
+
+  try {
+    var res = UrlFetchApp.fetch(url, {
+      method: 'post',
+      muteHttpExceptions: true,
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      payload: JSON.stringify(body)
+    });
+    var code = res.getResponseCode();
+    var txt = res.getContentText();
+    var respBody; try { respBody = JSON.parse(txt); } catch(_) { respBody = txt; }
+    var success = code >= 200 && code < 300;
+    return jsonResponse_({
+      success: success,
+      http_status: code,
+      validated_at: validated_at,
+      endpoint_used: url,
+      response_body: respBody,
+      request_body_snapshot: body,
+      error: success ? null : (respBody && respBody.detail) || ('HTTP ' + code)
+    });
+  } catch(err) {
+    return jsonResponse_({
+      success: false, http_status: null, validated_at: validated_at,
+      endpoint_used: url, response_body: null,
+      request_body_snapshot: body, error: String(err)
+    });
+  }
+}`}</pre>
+        </details>
 
         {/* Client-side result */}
         <ValidationResult result={validationResult} />
