@@ -455,9 +455,8 @@ export default function IncidentForm() {
             <NarrativeGuided fields={form} onChange={setNarr} />
           </Section>
 
-          {/* NERIS — admin only */}
-          {isAdmin && (
-            <Section title="NERIS Data" badge="Admin Only">
+          {/* NERIS Data */}
+          <Section title="NERIS Data" badge="Admin Only">
               <Field label="NERIS Environment">
                 <Select value={form.neris_env} onValueChange={set("neris_env")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -489,14 +488,11 @@ export default function IncidentForm() {
                 <Input value={form.form_url} onChange={set("form_url")} placeholder="Google Forms edit URL" />
               </Field>
             </Section>
-          )}
 
-          {/* NERIS Translation Engine — admin only */}
-          {isAdmin && (
-            <Section title="NERIS Translation Engine" badge="Admin Only" fullGrid>
-              <NerisPanel form={form} units={units} responders={responders} />
-            </Section>
-          )}
+          {/* NERIS Translation Engine */}
+          <Section title="NERIS Translation Engine" badge="Admin Only" fullGrid>
+            <NerisPanel form={form} units={units} responders={responders} />
+          </Section>
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
