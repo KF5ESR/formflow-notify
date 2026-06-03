@@ -60,7 +60,7 @@ export default function Home() {
         ? base44.entities.Incident.filter(filter, "-created_date", 200)
         : base44.entities.Incident.list("-created_date", 200);
     },
-    enabled: !deptLoading,
+    enabled: !deptLoading && (isSuperAdmin || currentUser?.department_id),
   });
 
   const deleteIncident = useMutation({
