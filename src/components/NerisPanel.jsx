@@ -244,30 +244,83 @@ export default function NerisPanel({ form, units, responders }) {
 
   const handleBackendValidate = async () => {
     if (!form.id) return;
+    const proxyUrl = config.apps_script_validate_url;
+    if (!proxyUrl) return;
+
     setValidating(true);
     setBackendValidationResult(null);
+
+    const validated_at = new Date().toISOString();
+
+    // Build the clean body — strip provenance + fields /validate rejects
+    const cleanBody = { ...apiPayload };
+    try { delete cleanBody.call_type; } catch (_) {}
+    try { if (cleanBody.dispatch) delete cleanBody.dispatch.primary_type; } catch (_) {}
+
+    const requestPayload = {
+      action: "validate",
+      entity_id: config.entity_id,
+      environment: env,
+      incident_id: form.nfirs_id || form.id,
+      body: cleanBody,
+    };
+
+    let result;
     try {
-      const result = await base44.functions.invoke("validateNerisIncident", {
-        incident_id: form.id,
-        api_body: apiPayload,
-        environment: env,
+      const resp = await fetch(proxyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestPayload),
+        redirect: "follow",
       });
-      setBackendValidationResult(result);
-      // Refresh the incident record to pick up saved validation fields
-      queryClient.invalidateQueries({ queryKey: ["incident", form.id] });
+
+      let respBody;
+      const text = await resp.text();
+      try { respBody = JSON.parse(text); } catch (_) { respBody = text; }
+
+      const httpOk = resp.status >= 200 && resp.status < 300;
+      const asObj = (typeof respBody === "object" && respBody !== null) ? respBody : {};
+      const success = httpOk && asObj.success !== false && !asObj.error;
+
+      result = {
+        success,
+        http_status: resp.status,
+        validated_at,
+        environment: env,
+        endpoint_used: `Apps Script proxy → NERIS /incident/${config.entity_id}/validate`,
+        response_body: respBody,
+        error_message: success ? null : (asObj.error || `HTTP ${resp.status}`),
+        request_body_snapshot: cleanBody,
+        route: "apps_script_proxy",
+      };
     } catch (e) {
-      setBackendValidationResult({
+      result = {
         success: false,
         http_status: null,
-        validated_at: new Date().toISOString(),
+        validated_at,
         environment: env,
-        endpoint_used: "validateNerisIncident (backend function)",
+        endpoint_used: proxyUrl,
         response_body: null,
         error_message: e.message,
-        request_body_snapshot: apiPayload,
-        route: "backend_invoke_failed",
-      });
+        request_body_snapshot: cleanBody,
+        route: "fetch_error",
+      };
     }
+
+    setBackendValidationResult(result);
+
+    // Save validation result back to the incident record
+    const validation_status = result.success ? "VALID" : (result.http_status ? "INVALID" : "ERROR");
+    try {
+      await base44.entities.Incident.update(form.id, {
+        neris_validation_status: validation_status,
+        neris_validation_message: result.error_message || (result.success ? "Validation passed" : "Validation failed"),
+        neris_validation_result_json: JSON.stringify(result),
+        neris_last_validated_at: validated_at,
+      });
+      queryClient.invalidateQueries({ queryKey: ["incident", form.id] });
+    } catch (_) {}
+
     setValidating(false);
   };
 
@@ -401,17 +454,24 @@ export default function NerisPanel({ form, units, responders }) {
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Check (client-side)
           </Button>
 
-          {/* Backend proxy → NERIS /validate */}
-          <Button
-            type="button"
-            onClick={handleBackendValidate}
-            disabled={validating || !form.id}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
-          >
-            {validating
-              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Validating…</>
-              : <><Shield className="w-3.5 h-3.5 mr-1.5" /> Validate via NERIS API</>}
-          </Button>
+          {/* Apps Script proxy → NERIS /validate */}
+          {config.apps_script_validate_url ? (
+            <Button
+              type="button"
+              onClick={handleBackendValidate}
+              disabled={validating || !form.id}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+            >
+              {validating
+                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Validating…</>
+                : <><Shield className="w-3.5 h-3.5 mr-1.5" /> Validate Clean NERIS API Body</>}
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Validation proxy not configured — add Apps Script validate URL in NerisConfig.
+            </div>
+          )}
 
           {/* Saved status badge */}
           {form.neris_validation_status && form.neris_validation_status !== "NOT_VALIDATED" && (
@@ -430,22 +490,25 @@ export default function NerisPanel({ form, units, responders }) {
           )}
         </div>
 
-        {/* Backend validation — architecture note */}
+        {/* Validation route note */}
         <div className="flex items-start gap-2 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
           <Info className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-          <div className="text-slate-500 space-y-0.5">
+          <div className="text-slate-500 space-y-1">
             <div>
-              <strong className="text-slate-600">Validate via NERIS API</strong> sends the exact{" "}
-              <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> body through a
-              backend function proxy to{" "}
-              <code className="bg-slate-100 px-1 rounded">POST /incident/{"{entity_id}"}/validate</code>.
+              <strong className="text-slate-600">Validation Route:</strong>{" "}
+              Base44 → Apps Script Proxy → NERIS{" "}
+              <code className="bg-slate-100 px-1 rounded">POST /incident/{"{entity_id}"}/validate</code>
             </div>
             <div>
-              Route: <strong>Base44 → backend function → Apps Script WebApp → NERIS</strong>{" "}
-              (Apps Script holds the NERIS token; no token is ever exposed in the browser).
-              Requires <code className="bg-slate-100 px-1 rounded">NERIS_APPS_SCRIPT_URL</code> or{" "}
-              <code className="bg-slate-100 px-1 rounded">NERIS_API_TOKEN</code> in backend secrets,
-              and a <strong>Builder+ plan</strong> for backend functions.
+              Body sent: exact <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> result
+              with <code className="bg-slate-100 px-1 rounded">call_type</code> and{" "}
+              <code className="bg-slate-100 px-1 rounded">dispatch.primary_type</code> stripped
+              (rejected by <code className="bg-slate-100 px-1 rounded">/validate</code> as extra_forbidden).
+              No NERIS token is ever held or exposed by Base44.
+            </div>
+            <div>
+              Configure <strong>Apps Script Validate URL</strong> in NerisConfig to activate.
+              The Apps Script WebApp handles NERIS OAuth and forwards to the correct environment.
             </div>
           </div>
         </div>

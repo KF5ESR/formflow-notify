@@ -43,6 +43,10 @@
       "type": "string",
       "title": "Custom Call Type Aliases (one per line: from=to)"
     },
+    "apps_script_validate_url": {
+      "type": "string",
+      "title": "Apps Script Validate URL (WebApp endpoint for NERIS /validate proxy)"
+    },
     "last_post_status": {
       "type": "string",
       "title": "Last Post Status"
