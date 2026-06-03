@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List, Building2 } from "lucide-react";
+import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List, Building2, Users, Truck } from "lucide-react";
 import { useDepartment } from "@/lib/DepartmentContext";
 import { useAuth } from "@/lib/AuthContext";
 import DepartmentSetupBanner from "@/components/DepartmentSetupBanner";
@@ -106,6 +106,12 @@ export default function Home() {
                 <Building2 className="w-3.5 h-3.5 mr-1.5" /> Departments
               </Button>
             )}
+            <Button variant="outline" size="sm" onClick={() => navigate("/members")} className="text-slate-600 hidden md:flex">
+              <Users className="w-3.5 h-3.5 mr-1.5" /> Members
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/apparatus")} className="text-slate-600 hidden md:flex">
+              <Truck className="w-3.5 h-3.5 mr-1.5" /> Apparatus
+            </Button>
             <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white">
               <button onClick={() => setView("list")} className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
                 <List className="w-3.5 h-3.5" /> List

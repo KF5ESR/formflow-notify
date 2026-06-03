@@ -133,6 +133,18 @@ export default function IncidentForm() {
     enabled: isEdit,
   });
 
+  const { data: members = [] } = useQuery({
+    queryKey: ["members", department?.id],
+    queryFn: () => base44.entities.Member.filter({ department_id: department?.id || "" }),
+    enabled: !!department?.id,
+  });
+
+  const { data: apparatus = [] } = useQuery({
+    queryKey: ["apparatus", department?.id],
+    queryFn: () => base44.entities.Apparatus.filter({ department_id: department?.id || "" }),
+    enabled: !!department?.id,
+  });
+
   useEffect(() => {
    if (existing) {
      const merged = { ...EMPTY_FORM };
@@ -395,7 +407,7 @@ export default function IncidentForm() {
                <SelectContent>{FD_OPTIONS_FILTERED.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
              </Select>
             </div>
-            <UnitSection units={units} onChange={setUnits} globalDispatch={form.dispatch_time} responders={responders} />
+            <UnitSection units={units} onChange={setUnits} globalDispatch={form.dispatch_time} responders={responders} apparatus={apparatus} />
           </Section>
 
           {/* Responders */}
@@ -430,7 +442,7 @@ export default function IncidentForm() {
                 />
               </div>
             </div>
-            <ResponderSection responders={responders} onChange={setResponders} units={units} />
+            <ResponderSection responders={responders} onChange={setResponders} units={units} members={members} />
           </Section>
 
           {/* Mutual Aid */}

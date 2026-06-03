@@ -18,7 +18,7 @@ const EMPTY_UNIT = {
   _enroute_auto: true, // POV default: enroute tracks dispatch
 };
 
-function UnitRow({ unit, index, onChange, onRemove, globalDispatch, autoStaffing }) {
+function UnitRow({ unit, index, onChange, onRemove, globalDispatch, autoStaffing, apparatus = [] }) {
   const handleField = (key, val) => {
     const updated = { ...unit, [key]: val };
 
@@ -78,7 +78,16 @@ function UnitRow({ unit, index, onChange, onRemove, globalDispatch, autoStaffing
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <Label className="text-xs text-slate-600 mb-1 block">Unit ID</Label>
-          <Input value={unit.unit_id} onChange={(e) => handleField("unit_id", e.target.value)} placeholder="E555, B560…" className="h-8 text-sm" />
+          {apparatus.length > 0 ? (
+            <Select value={unit.unit_id} onValueChange={(v) => handleField("unit_id", v)}>
+              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select unit..." /></SelectTrigger>
+              <SelectContent>
+                {apparatus.map((a) => <SelectItem key={a.id} value={a.unit_id}>{a.unit_id} ({a.unit_type})</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input value={unit.unit_id} onChange={(e) => handleField("unit_id", e.target.value)} placeholder="E555, B560…" className="h-8 text-sm" />
+          )}
         </div>
         <div>
           <Label className="text-xs text-slate-600 mb-1 block">Unit Type</Label>
@@ -142,7 +151,7 @@ function UnitRow({ unit, index, onChange, onRemove, globalDispatch, autoStaffing
   );
 }
 
-export default function UnitSection({ units, onChange, globalDispatch, responders = [] }) {
+export default function UnitSection({ units, onChange, globalDispatch, responders = [], apparatus = [] }) {
   // Build auto-staffing map: unit_id → count of responders assigned to that unit
   const autoStaffingMap = {};
   responders.forEach(r => {
@@ -169,7 +178,7 @@ export default function UnitSection({ units, onChange, globalDispatch, responder
   return (
     <div className="space-y-3">
       {units.map((unit, i) => (
-        <UnitRow key={i} unit={unit} index={i} onChange={updateUnit} onRemove={removeUnit} globalDispatch={globalDispatch} autoStaffing={autoStaffingMap[unit.unit_id] || 0} />
+        <UnitRow key={i} unit={unit} index={i} onChange={updateUnit} onRemove={removeUnit} globalDispatch={globalDispatch} autoStaffing={autoStaffingMap[unit.unit_id] || 0} apparatus={apparatus} />
       ))}
       <Button type="button" variant="outline" onClick={addUnit} className="w-full border-dashed text-slate-500 hover:text-slate-700">
         <Plus className="w-4 h-4 mr-2" /> Add Unit

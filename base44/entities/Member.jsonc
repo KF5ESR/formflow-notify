@@ -1,0 +1,122 @@
+{
+  "name": "Member",
+  "type": "object",
+  "properties": {
+    "department_id": {
+      "type": "string",
+      "title": "Department ID"
+    },
+    "name": {
+      "type": "string",
+      "title": "Full Name"
+    },
+    "badge_number": {
+      "type": "string",
+      "title": "Badge Number"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "Chief",
+        "Captain",
+        "Lieutenant",
+        "Firefighter",
+        "Paramedic",
+        "Driver",
+        "Other"
+      ],
+      "title": "Role"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Inactive",
+        "On Leave"
+      ],
+      "default": "Active",
+      "title": "Status"
+    }
+  },
+  "required": [
+    "department_id",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.department_id": "{{user.department_id}}"
+            },
+            {
+              "user_condition": {
+                "role": "dept_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "data.department_id": "{{user.department_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.department_id": "{{user.department_id}}"
+            },
+            {
+              "user_condition": {
+                "role": "dept_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.department_id": "{{user.department_id}}"
+            },
+            {
+              "user_condition": {
+                "role": "dept_admin"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

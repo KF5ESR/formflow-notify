@@ -9,7 +9,7 @@ const RESPONSE_TYPES = ["POV", "Station/Apparatus", "Mutual Aid"];
 
 const EMPTY_RESPONDER = { name: "", role: "Primary", response_type: "POV", assigned_unit: "" };
 
-function ResponderRow({ responder, index, onChange, onRemove, unitIds }) {
+function ResponderRow({ responder, index, onChange, onRemove, unitIds, members = [] }) {
   const set = (key, val) => onChange(index, { ...responder, [key]: val });
 
   return (
@@ -19,12 +19,21 @@ function ResponderRow({ responder, index, onChange, onRemove, unitIds }) {
         <span className="text-xs text-slate-500 w-4 text-center">{index + 1}</span>
       </div>
       <div className="flex-1 min-w-32">
-        <Input
-          value={responder.name}
-          onChange={(e) => set("name", e.target.value)}
-          placeholder="Responder name"
-          className="h-8 text-sm"
-        />
+        {members.length > 0 ? (
+          <Select value={responder.name} onValueChange={(v) => set("name", v)}>
+            <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select member..." /></SelectTrigger>
+            <SelectContent>
+              {members.map((m) => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            value={responder.name}
+            onChange={(e) => set("name", e.target.value)}
+            placeholder="Responder name"
+            className="h-8 text-sm"
+          />
+        )}
       </div>
       <div className="w-32">
         <Select value={responder.role} onValueChange={(v) => set("role", v)}>
@@ -54,7 +63,7 @@ function ResponderRow({ responder, index, onChange, onRemove, unitIds }) {
   );
 }
 
-export default function ResponderSection({ responders, onChange, units = [] }) {
+export default function ResponderSection({ responders, onChange, units = [], members = [] }) {
   const unitIds = units.map(u => u.unit_id).filter(Boolean);
   const add = () => onChange([...responders, { ...EMPTY_RESPONDER }]);
 
@@ -77,7 +86,7 @@ export default function ResponderSection({ responders, onChange, units = [] }) {
         <span className="w-7" />
       </div>
       {responders.map((r, i) => (
-        <ResponderRow key={i} responder={r} index={i} onChange={update} onRemove={remove} unitIds={unitIds} />
+        <ResponderRow key={i} responder={r} index={i} onChange={update} onRemove={remove} unitIds={unitIds} members={members} />
       ))}
       <Button type="button" variant="outline" onClick={add} className="w-full border-dashed text-slate-500 hover:text-slate-700">
         <Plus className="w-4 h-4 mr-2" /> Add Responder
