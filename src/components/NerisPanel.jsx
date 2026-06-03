@@ -8,7 +8,7 @@
  * Actual API calls (validate/submit) require a backend function with NERIS credentials.
  */
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { buildNerisPayload } from "@/utils/nerisPayload";
 import { translateToNeris, validateNerisPayload, diffLayers, buildApiPayload } from "@/utils/nerisTranslator";
@@ -267,30 +267,25 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
 
     let result;
     try {
-      // Use text/plain to avoid CORS preflight — Apps Script parses via e.postData.contents
-      const resp = await fetch(proxyUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(requestPayload),
-        redirect: "follow",
+      // Route through backend function to avoid CORS with Google Apps Script
+      const proxyResp = await base44.functions.invoke("nerisValidateProxy", {
+        proxyUrl,
+        requestPayload,
       });
+      const { http_status, response_body } = proxyResp.data;
 
-      let respBody;
-      const text = await resp.text();
-      try { respBody = JSON.parse(text); } catch (_) { respBody = text; }
-
-      const httpOk = resp.status >= 200 && resp.status < 300;
-      const asObj = (typeof respBody === "object" && respBody !== null) ? respBody : {};
+      const httpOk = http_status >= 200 && http_status < 300;
+      const asObj = (typeof response_body === "object" && response_body !== null) ? response_body : {};
       const success = httpOk && asObj.success !== false && !asObj.error;
 
       result = {
         success,
-        http_status: resp.status,
+        http_status,
         validated_at,
         environment: env,
         endpoint_used: `Apps Script proxy → NERIS /incident/${config.entity_id}/validate`,
-        response_body: respBody,
-        error_message: success ? null : (asObj.error || `HTTP ${resp.status}`),
+        response_body,
+        error_message: success ? null : (asObj.error || `HTTP ${http_status}`),
         request_body_snapshot: cleanBody,
         route: "apps_script_proxy",
       };
