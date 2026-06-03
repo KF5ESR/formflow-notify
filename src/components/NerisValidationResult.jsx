@@ -11,7 +11,7 @@ export default function NerisValidationResult({ result }) {
   if (!result) return null;
 
   const { success, http_status, validated_at, environment, endpoint_used,
-          response_body, error_message, request_body_snapshot, route } = result;
+          response_body, error_message, request_body_snapshot, route, cfg_diagnostic } = result;
 
   return (
     <div className={`border rounded-lg overflow-hidden ${success
@@ -46,6 +46,26 @@ export default function NerisValidationResult({ result }) {
         {route && <div><span className="font-medium">Route:</span> {route === "apps_script" ? "Base44 → Apps Script → NERIS" : route === "direct" ? "Base44 → NERIS direct" : route}</div>}
         {validated_at && <div><span className="font-medium">Validated at:</span> {new Date(validated_at).toLocaleString()}</div>}
       </div>
+
+      {/* cfg diagnostic block — shown whenever present */}
+      {cfg_diagnostic && (
+        <div className="border-t border-slate-200 px-4 py-3 bg-amber-50 space-y-1">
+          <div className="text-xs font-semibold text-amber-700 mb-1">Apps Script config diagnostic (non-secret)</div>
+          {Object.entries(cfg_diagnostic).map(([k, v]) => (
+            <div key={k} className="text-xs font-mono">
+              <span className="text-slate-500">{k}:</span>{" "}
+              <span className={
+                String(v).startsWith("https://docs.google") || String(v).startsWith("https://drive.google")
+                  ? "text-red-600 font-bold"
+                  : "text-slate-800"
+              }>{String(v)}</span>
+              {(String(v).startsWith("https://docs.google") || String(v).startsWith("https://drive.google")) && (
+                <span className="ml-2 text-red-600">⚠ This is a Google Drive/Docs URL — should be a NERIS API URL</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 401 diagnostic guidance */}
       {!success && http_status === 401 && (

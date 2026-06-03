@@ -517,7 +517,13 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
           <summary className="px-3 py-2 bg-slate-50 cursor-pointer font-medium text-slate-700 hover:bg-slate-100">
             Apps Script <code>doPost</code> handler template — add this branch to your WebApp
           </summary>
-          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// ─── CORRECTED handleBase44Validate_ ─────────────────────────────────────────
+          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// ─── IMPORTANT: DO NOT REPLACE your existing doPost(e) ──────────────────────
+          // Only INSERT the Base44 branch near the top of your existing doPost(e).
+          // If your doPost ends with "return unsupported POST", your Forms workflow WILL BREAK.
+          // The Base44 branch must fall through to your existing logic if action !== 'validate'.
+          // ─────────────────────────────────────────────────────────────────────────────
+          //
+          // ─── handleBase44Validate_ ────────────────────────────────────────────────────
           // Uses the SAME token pattern as the working FA NERIS calls:
           //   cfg        = getNerisConfig()          (no underscore — matches your script)
           //   tokenInfo  = getNerisToken_(cfg)
@@ -564,39 +570,55 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
           }
 
           var endpoint  = base + '/incident/' + encodeURIComponent(entityId) + '/validate';
-          var tokenInfo = getNerisToken_(cfg);           // same as FA NERIS tools
-          var token     = tokenInfo && tokenInfo.token;  // same extraction as working calls
-          token = String(token || '').trim();
 
-          if (!token) return jsonResponse_({ success: false, http_status: null, validated_at: validated_at, endpoint_used: endpoint, error: 'NERIS token unavailable — check getNerisToken_() return value' });
+          // ── Diagnostic: return non-secret cfg values so we can verify URLs are correct ──
+          // NERIS_BASE_URL  must be https://api-test.neris.fsri.org/v1  (not a Drive/Docs URL)
+          // NERIS_TOKEN_URL must be the real NERIS token endpoint        (not a Drive/Docs URL)
+          var diagCfg = {
+            NERIS_BASE_URL:  String(cfg.NERIS_BASE_URL  || '(not set)'),
+            NERIS_TOKEN_URL: String(cfg.NERIS_TOKEN_URL || '(not set)'),
+            NERIS_ENV:       String(cfg.NERIS_ENV       || '(not set)'),
+            entity_id:       entityId,
+            endpoint_used:   endpoint,
+          };
+
+          var tokenInfo = getNerisToken_(cfg);
+          var token     = tokenInfo && tokenInfo.token;
+          token = String(token || '').trim();
+          diagCfg.token_present = token.length > 0;
+
+          if (!token) return jsonResponse_({ success: false, http_status: null, validated_at: validated_at, cfg_diagnostic: diagCfg, error: 'NERIS token unavailable — check getNerisToken_() return value' });
 
           var res = UrlFetchApp.fetch(endpoint, {
-          method: 'post',
-          muteHttpExceptions: true,
-          headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          },
-          payload: JSON.stringify(body),
+            method: 'post',
+            muteHttpExceptions: true,
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            payload: JSON.stringify(body),
           });
 
           var code = res.getResponseCode();
           var txt  = res.getContentText();
+          // Cap at 500 chars so HTML error pages don't flood the result
+          var txtPreview = txt ? txt.substring(0, 500) : '';
           var responseBody;
-          try { responseBody = txt ? JSON.parse(txt) : ''; } catch(_) { responseBody = txt; }
+          try { responseBody = txt ? JSON.parse(txt) : ''; } catch(_) { responseBody = txtPreview; }
 
           var success = code >= 200 && code < 300;
           return jsonResponse_({
-          success:               success,
-          http_status:           code,
-          validated_at:          validated_at,
-          endpoint_used:         endpoint,
-          response_body:         responseBody,   // always returned — shows NERIS error detail on 401
-          request_body_snapshot: body,
-          environment_requested: data.environment || null,
-          environment_used:      cfg.NERIS_ENV   || null,
-          error: success ? null : (responseBody && (responseBody.detail || responseBody.message)) || ('HTTP ' + code),
+            success:               success,
+            http_status:           code,
+            validated_at:          validated_at,
+            endpoint_used:         endpoint,
+            cfg_diagnostic:        diagCfg,
+            response_body:         responseBody,
+            request_body_snapshot: body,
+            environment_requested: data.environment || null,
+            environment_used:      cfg.NERIS_ENV   || null,
+            error: success ? null : (typeof responseBody === 'object' && (responseBody.detail || responseBody.message)) || ('HTTP ' + code),
           });
 
           } catch(err) {
