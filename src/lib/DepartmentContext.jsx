@@ -35,7 +35,9 @@ export function DepartmentProvider({ children }) {
           setDepartment(null);
           setNerisConfig(null);
         }
-      } catch (_) {}
+      } catch (err) {
+        console.error("Failed to load department:", err);
+      }
       setLoading(false);
     };
 
