@@ -252,10 +252,10 @@ export default function NerisPanel({ form, units, responders }) {
 
     const validated_at = new Date().toISOString();
 
-    // Build the clean body — strip provenance + fields /validate rejects
-    const cleanBody = { ...apiPayload };
-    try { delete cleanBody.call_type; } catch (_) {}
-    try { if (cleanBody.dispatch) delete cleanBody.dispatch.primary_type; } catch (_) {}
+    // buildApiPayload() already produces the clean body (no _internal fields,
+    // no call_type, no dispatch.primary_type — those are never added by translateToNeris).
+    // Do NOT reshape it here; Apps Script runs shapePayloadForRemoteValidate_() as final safety.
+    const cleanBody = apiPayload;
 
     const requestPayload = {
       action: "validate",
@@ -500,10 +500,9 @@ export default function NerisPanel({ form, units, responders }) {
               <code className="bg-slate-100 px-1 rounded">POST /incident/{"{entity_id}"}/validate</code>
             </div>
             <div>
-              Body sent: exact <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> result
-              with <code className="bg-slate-100 px-1 rounded">call_type</code> and{" "}
-              <code className="bg-slate-100 px-1 rounded">dispatch.primary_type</code> stripped
-              (rejected by <code className="bg-slate-100 px-1 rounded">/validate</code> as extra_forbidden).
+              Body sent: exact <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> output — 
+              provenance stripped, no reshaping in the panel.
+              Apps Script runs <code className="bg-slate-100 px-1 rounded">shapePayloadForRemoteValidate_()</code> as a final safety pass before calling NERIS.
               No NERIS token is ever held or exposed by Base44.
             </div>
             <div>
