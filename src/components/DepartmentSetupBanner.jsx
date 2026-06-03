@@ -31,8 +31,8 @@ export default function DepartmentSetupBanner() {
     );
   }
 
-  // No department linked to user
-  if (!isSuperAdmin && (!departmentId || !department)) {
+  // No department linked to user (regular users only)
+  if (!isSuperAdmin && !departmentId) {
     return (
       <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center gap-3 text-sm">
         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
@@ -41,6 +41,11 @@ export default function DepartmentSetupBanner() {
         </span>
       </div>
     );
+  }
+
+  // Super admin with department assigned but not loaded yet — no banner
+  if (isSuperAdmin && !department) {
+    return null;
   }
 
   // Department exists — show onboarding progress if incomplete
