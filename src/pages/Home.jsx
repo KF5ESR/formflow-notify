@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List } from "lucide-react";
 
 const TYPE_COLORS = {
   "Fire": "bg-red-100 text-red-700",
@@ -44,6 +44,7 @@ function NerisStatus({ incident }) {
 export default function Home() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [view, setView] = useState("list"); // "list" | "raw"
 
   const { data: incidents = [], isLoading } = useQuery({
     queryKey: ["incidents"],
@@ -87,11 +88,21 @@ export default function Home() {
               <p className="text-sm text-slate-500">Incident Run Sheet</p>
             </div>
           </div>
-          <Link to="/incident/new">
-            <Button className="bg-red-600 hover:bg-red-700 text-white shadow-sm">
-              <Plus className="w-4 h-4 mr-2" /> New Incident
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white">
+              <button onClick={() => setView("list")} className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                <List className="w-3.5 h-3.5" /> List
+              </button>
+              <button onClick={() => setView("raw")} className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${view === "raw" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                <Table className="w-3.5 h-3.5" /> Raw Data
+              </button>
+            </div>
+            <Link to="/incident/new">
+              <Button className="bg-red-600 hover:bg-red-700 text-white shadow-sm">
+                <Plus className="w-4 h-4 mr-2" /> New Incident
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}
@@ -120,18 +131,50 @@ export default function Home() {
           />
         </div>
 
-        {/* List */}
-        {isLoading ? (
+        {/* Raw Data View */}
+        {view === "raw" && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            {isLoading ? (
+              <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin" /></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="text-xs w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-800 text-white">
+                      {["nfirs_id","psrid","date","dispatch_time","first_on_scene_time","control_time","fd_clear_time","incident_location","nature_of_call","action_taken","type_response","type_response_2","investigation","incident_commander","select_fd","patients_injured","fatalities","mutual_aid","value_dollar","loss_dollar","neris_env","neris_post_status","neris_logged","neris_validation_status","neris_incident_composite","email_status","notes"].map(col => (
+                        <th key={col} className="px-2 py-2 text-left font-semibold whitespace-nowrap border-r border-slate-700 last:border-r-0">{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((inc, i) => (
+                      <tr key={inc.id} className={`border-b border-slate-100 hover:bg-blue-50 cursor-pointer ${i % 2 === 0 ? "bg-white" : "bg-slate-50"}`} onClick={() => window.location.href = `/incident/${inc.id}`}>
+                        {["nfirs_id","psrid","date","dispatch_time","first_on_scene_time","control_time","fd_clear_time","incident_location","nature_of_call","action_taken","type_response","type_response_2","investigation","incident_commander","select_fd","patients_injured","fatalities","mutual_aid","value_dollar","loss_dollar","neris_env","neris_post_status","neris_logged","neris_validation_status","neris_incident_composite","email_status","notes"].map(col => (
+                          <td key={col} className="px-2 py-1.5 border-r border-slate-100 last:border-r-0 max-w-[200px] truncate whitespace-nowrap">
+                            {inc[col] === true ? "✓" : inc[col] === false ? "✗" : (inc[col] ?? "")}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filtered.length === 0 && <div className="text-center py-10 text-slate-400">No incidents found</div>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === "list" && isLoading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : view === "list" && filtered.length === 0 ? (
           <div className="text-center py-16 text-slate-400">
             <Flame className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">{search ? "No matches found" : "No incidents yet"}</p>
             {!search && <Link to="/incident/new"><Button className="mt-4 bg-red-600 hover:bg-red-700 text-white"><Plus className="w-4 h-4 mr-1" /> Add First Incident</Button></Link>}
           </div>
-        ) : (
+        ) : view === "list" ? (
           <div className="space-y-3">
             {filtered.map((inc) => (
               <div key={inc.id} className="bg-white rounded-xl border border-slate-100 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -173,7 +216,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
