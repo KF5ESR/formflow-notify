@@ -267,9 +267,10 @@ export default function NerisPanel({ form, units, responders }) {
 
     let result;
     try {
+      // Use text/plain to avoid CORS preflight — Apps Script parses via e.postData.contents
       const resp = await fetch(proxyUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(requestPayload),
         redirect: "follow",
       });
@@ -522,20 +523,24 @@ export default function NerisPanel({ form, units, responders }) {
           <summary className="px-3 py-2 bg-slate-50 cursor-pointer font-medium text-slate-700 hover:bg-slate-100">
             Apps Script <code>doPost</code> handler template — add this branch to your WebApp
           </summary>
-          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// Add to your Apps Script doPost(e) — handles Base44 validate action
-// Accepts: { action:"validate", entity_id, environment, incident_id, body:{...} }
-// Returns JSON: { success, http_status, validated_at, endpoint_used, response_body, request_body_snapshot }
+          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// DO NOT replace your existing doPost(e).
+// Add this branch NEAR THE TOP of your existing doPost(e), before existing logic.
+// Base44 sends JSON as text/plain to avoid CORS preflight — still readable via e.postData.contents.
 
+// In your existing doPost(e), add near the top:
 function doPost(e) {
+  // --- Base44 validate branch (add this block) ---
   try {
-    var data = JSON.parse(e.postData.contents);
-    if (data.action === 'validate') {
-      return handleBase44Validate_(data);
+    if (e && e.postData && e.postData.contents) {
+      var data = JSON.parse(e.postData.contents);
+      if (data && data.action === 'validate') {
+        return handleBase44Validate_(data);
+      }
     }
-    // ... your existing doPost branches ...
-  } catch(err) {
-    return jsonResponse_({ ok: false, error: String(err) });
-  }
+  } catch(_) { /* not a Base44 JSON post — fall through to existing logic */ }
+  // --- end Base44 branch ---
+
+  // ... your existing doPost logic continues unchanged below ...
 }
 
 function handleBase44Validate_(data) {
