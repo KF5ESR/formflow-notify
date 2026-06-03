@@ -8,6 +8,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Restrict to authorized roles
+    if (user.role !== 'super_admin' && user.role !== 'dept_admin') {
+      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     const { proxyUrl, requestPayload } = await req.json();
 
     if (!proxyUrl) {
