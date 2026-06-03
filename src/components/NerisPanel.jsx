@@ -496,16 +496,15 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
               <code className="bg-slate-100 px-1 rounded">POST /incident/{"{entity_id}"}/validate</code>
             </div>
             <div>
-              Body sent: exact <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> output — no reshaping in the panel.
-              The Apps Script WebApp must have a <code className="bg-slate-100 px-1 rounded">doPost</code> branch that handles{" "}
-              <code className="bg-slate-100 px-1 rounded">action: "validate"</code> with a provided{" "}
-              <code className="bg-slate-100 px-1 rounded">body</code> key, runs{" "}
-              <code className="bg-slate-100 px-1 rounded">shapePayloadForRemoteValidate_(body)</code>, then POSTs to NERIS.
+              The <code className="bg-slate-100 px-1 rounded">handleBase44Validate_</code> bridge must
+              call the <strong>same internal helper</strong> that{" "}
+              <code className="bg-slate-100 px-1 rounded">nerisValidateIncidentById_</code> uses — so all
+              existing Config sheet / Script Properties auth logic is reused automatically.
+              Do <strong>not</strong> hand-roll a separate <code className="bg-slate-100 px-1 rounded">UrlFetchApp.fetch()</code> or token lookup.
             </div>
-            <div className="text-amber-600 font-medium">
-              ⚠ The standard FA WebApp only validates by sheet row (via <code className="bg-amber-50 px-1 rounded">nerisValidateIncidentById_</code>).
-              You must add a <code className="bg-amber-50 px-1 rounded">doPost action:"validate"</code> branch that accepts and forwards an externally-provided clean body.
-              See the handler template below.
+            <div className="text-green-700 font-medium">
+              ✓ Config sheet is assumed good — the Google Forms path already validates/posts successfully.
+              The only change needed is plugging Base44&apos;s externally-supplied body into that same proven path.
             </div>
             <div>
               No NERIS token is ever held or exposed by Base44.
@@ -518,13 +517,34 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
           <summary className="px-3 py-2 bg-slate-50 cursor-pointer font-medium text-slate-700 hover:bg-slate-100">
             Apps Script <code>doPost</code> handler template — add this branch to your WebApp
           </summary>
-          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// DO NOT replace your existing doPost(e).
-// Add this branch NEAR THE TOP of your existing doPost(e), before existing logic.
-// Base44 sends JSON as text/plain to avoid CORS preflight — still readable via e.postData.contents.
+          <pre className="bg-slate-900 text-green-300 p-4 overflow-auto max-h-80 whitespace-pre text-xs font-mono">{`// ─── STRATEGY ────────────────────────────────────────────────────────────────
+// Do NOT duplicate the NERIS auth/token/fetch logic.
+// Instead, reuse the same internal helper that nerisValidateIncidentById_() calls.
+//
+// How nerisValidateIncidentById_() works (look it up in your script):
+//   1. It calls shapePayloadForRemoteValidate_(body) to clean the body.
+//   2. It calls some internal helper — e.g. nerisRemoteValidate_(body, cfg)
+//      or nerisApiPost_(path, body, cfg) — that already handles:
+//        • reading NERIS_BASE_URL / NERIS_ENTITY_ID from Script Properties / Config sheet
+//        • obtaining the Bearer token via getNerisToken_(cfg)
+//        • calling UrlFetchApp with the correct headers
+//   3. It returns the HTTP result.
+//
+// Your handleBase44Validate_ should call THAT same helper — not roll its own.
+// ─────────────────────────────────────────────────────────────────────────────
 
-// In your existing doPost(e), add near the top:
+// Step 1: Find the validate helper inside nerisValidateIncidentById_().
+// It will look something like one of these — check your actual script:
+//
+//   nerisRemoteValidate_(body, cfg)           ← most likely
+//   nerisApiPost_('/incident/'+id+'/validate', body, cfg)
+//   postToNeris_(url, body, token)
+//
+// Once you know the real name, use it in handleBase44Validate_ below.
+
+// ─── ADD THIS BLOCK near the top of your existing doPost(e) ──────────────────
 function doPost(e) {
-  // --- Base44 validate branch (add this block) ---
+  // --- Base44 validate branch ---
   try {
     if (e && e.postData && e.postData.contents) {
       var data = JSON.parse(e.postData.contents);
@@ -532,53 +552,65 @@ function doPost(e) {
         return handleBase44Validate_(data);
       }
     }
-  } catch(_) { /* not a Base44 JSON post — fall through to existing logic */ }
+  } catch(_) { /* not a Base44 JSON post — fall through */ }
   // --- end Base44 branch ---
 
-  // ... your existing doPost logic continues unchanged below ...
+  // ... your existing doPost logic continues unchanged ...
 }
 
 function handleBase44Validate_(data) {
   var validated_at = new Date().toISOString();
-  var cfg = getNerisConfig();
-  var entityId = data.entity_id || cfg.NERIS_ENTITY_ID || '';
   var body = data.body || {};
 
-  // Final safety cleanup — strips extra_forbidden fields, canonicalizes unit times
+  // Step 1: shape the body exactly as the Forms path does
   shapePayloadForRemoteValidate_(body);
 
-  var base = (cfg.NERIS_BASE_URL || '').replace(/\\/+$/, '');
-  var url = base + '/incident/' + encodeURIComponent(entityId) + '/validate';
-  var token = getNerisToken_(cfg).token;
+  // Step 2: delegate to the SAME internal validate helper used by
+  // nerisValidateIncidentById_() — this reuses all existing auth/token/URL logic.
+  //
+  // *** REPLACE the call below with whatever function nerisValidateIncidentById_
+  //     actually calls internally. Common patterns: ***
+  //
+  //   var cfg = getNerisConfig_();                          // if needed
+  //   var result = nerisRemoteValidate_(body, cfg);         // most likely
+  //   -- OR --
+  //   var result = nerisApiPost_('validate', body, cfg);
+  //
+  // The result object should have .code (HTTP status) and .body (parsed response).
+  // Adjust the field names below to match what your helper actually returns.
 
   try {
-    var res = UrlFetchApp.fetch(url, {
-      method: 'post',
-      muteHttpExceptions: true,
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      payload: JSON.stringify(body)
-    });
-    var code = res.getResponseCode();
-    var txt = res.getContentText();
-    var respBody; try { respBody = JSON.parse(txt); } catch(_) { respBody = txt; }
+    var cfg = getNerisConfig_();                         // ← use your real config helper name
+    var result = nerisRemoteValidate_(body, cfg);        // ← use your real validate helper name
+
+    var code = result.code || result.http_status || 0;
+    var respBody = result.body || result.response_body || result;
     var success = code >= 200 && code < 300;
+
     return jsonResponse_({
       success: success,
       http_status: code,
       validated_at: validated_at,
-      endpoint_used: url,
       response_body: respBody,
       request_body_snapshot: body,
       error: success ? null : (respBody && respBody.detail) || ('HTTP ' + code)
     });
   } catch(err) {
     return jsonResponse_({
-      success: false, http_status: null, validated_at: validated_at,
-      endpoint_used: url, response_body: null,
-      request_body_snapshot: body, error: String(err)
+      success: false,
+      http_status: null,
+      validated_at: validated_at,
+      response_body: null,
+      request_body_snapshot: body,
+      error: String(err)
     });
   }
-}`}</pre>
+}
+
+// ─── How to find the right helper name ───────────────────────────────────────
+// In your Apps Script editor, search for "nerisValidateIncidentById_" and look
+// at what it calls after shapePayloadForRemoteValidate_().  Use that exact
+// function name in the two marked lines above.  That's it — no new auth code.`}</pre>
         </details>
 
         {/* Client-side result */}
