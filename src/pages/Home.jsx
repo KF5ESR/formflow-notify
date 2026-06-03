@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List, Building2 } from "lucide-react";
+import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List, Building2, LogOut } from "lucide-react";
 import { useDepartment } from "@/lib/DepartmentContext";
 import { useAuth } from "@/lib/AuthContext";
 import DepartmentSetupBanner from "@/components/DepartmentSetupBanner";
@@ -47,7 +47,7 @@ function NerisStatus({ incident }) {
 export default function Home() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { department, scopeFilter, isSuperAdmin, loading: deptLoading } = useDepartment();
   const [search, setSearch] = useState("");
   const [view, setView] = useState("list"); // "list" | "raw"
@@ -119,6 +119,9 @@ export default function Home() {
                 <Plus className="w-4 h-4 mr-2" /> New Incident
               </Button>
             </Link>
+            <Button variant="ghost" size="icon" onClick={() => logout()} className="text-slate-400 hover:text-red-600">
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
