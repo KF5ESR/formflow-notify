@@ -61,10 +61,12 @@ const Section = ({ title, badge, children, defaultOpen = true, fullGrid = false,
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className={`border rounded-xl overflow-hidden mb-4 ${warning ? "border-amber-300" : "border-slate-200"}`}>
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between px-5 py-3 transition-colors ${warning ? "bg-amber-50 hover:bg-amber-100" : "bg-slate-50 hover:bg-slate-100"}`}
+        onKeyDown={(e) => e.key === 'Enter' && setOpen(!open)}
+        className={`w-full flex items-center justify-between px-5 py-3 transition-colors cursor-pointer ${warning ? "bg-amber-50 hover:bg-amber-100" : "bg-slate-50 hover:bg-slate-100"}`}
       >
         <div className="flex items-center gap-2">
           {warning && <AlertTriangle className="w-4 h-4 text-amber-500" />}
@@ -73,7 +75,7 @@ const Section = ({ title, badge, children, defaultOpen = true, fullGrid = false,
           {warning && <span className="text-xs text-amber-600 font-medium">{warning}</span>}
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-      </button>
+      </div>
       {open && (
         <div className={fullGrid ? "p-5" : "p-5 grid grid-cols-1 md:grid-cols-2 gap-4"}>
           {children}
