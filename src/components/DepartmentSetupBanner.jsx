@@ -5,16 +5,14 @@
 import { useDepartment } from "@/lib/DepartmentContext";
 import { useAuth } from "@/lib/AuthContext";
 import { ONBOARDING_STEPS, getOnboardingStepIndex } from "@/lib/nerisReadiness";
-import { AlertTriangle, Building2, ArrowRight, CheckCircle, Settings, RefreshCw } from "lucide-react";
+import { AlertTriangle, Building2, ArrowRight, CheckCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 
 export default function DepartmentSetupBanner() {
   const { department, nerisConfig, loading, isSuperAdmin, departmentId } = useDepartment();
-  const { currentUser, refreshUser } = useAuth();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [refreshing, setRefreshing] = useState(false);
 
   if (loading) return null;
 
@@ -35,21 +33,12 @@ export default function DepartmentSetupBanner() {
 
   // No department linked to user
   if (!departmentId || !department) {
-    const handleRefresh = async () => {
-      setRefreshing(true);
-      await refreshUser();
-      setRefreshing(false);
-    };
-
     return (
       <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center gap-3 text-sm">
         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
         <span className="text-amber-800 flex-1">
           Your account is not linked to a department. Contact your Super Admin to be assigned.
         </span>
-        <Button size="sm" variant="outline" onClick={handleRefresh} disabled={refreshing} className="text-amber-700 border-amber-300 shrink-0">
-          <RefreshCw className={`w-3 h-3 mr-1 ${refreshing ? 'animate-spin' : ''}`} /> {refreshing ? 'Refreshing...' : 'Refresh'}
-        </Button>
       </div>
     );
   }
