@@ -217,6 +217,34 @@
     "neris_last_validated_at": {
       "type": "string",
       "title": "NERIS Last Validated At"
+    },
+    "neris_validation_environment": {
+      "type": "string",
+      "title": "NERIS Validation Environment"
+    },
+    "neris_validation_http_status": {
+      "type": "number",
+      "title": "NERIS Validation HTTP Status"
+    },
+    "neris_validation_endpoint": {
+      "type": "string",
+      "title": "NERIS Validation Endpoint"
+    },
+    "neris_validation_route": {
+      "type": "string",
+      "title": "NERIS Validation Route"
+    },
+    "neris_incident_id_source_used": {
+      "type": "string",
+      "title": "NERIS Incident ID Source Used"
+    },
+    "neris_incident_number_used": {
+      "type": "string",
+      "title": "NERIS Incident Number Used"
+    },
+    "neris_validation_request_snapshot_json": {
+      "type": "string",
+      "title": "NERIS Validation Request Snapshot (JSON)"
     }
   },
   "required": [

@@ -15,7 +15,7 @@ import { translateToNeris, validateNerisPayload, diffLayers, buildApiPayload } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getIncidentTypeOptions, getActionTacticOptions, GITHUB_REFS, clearCache, getCacheAge } from "@/utils/nerisValueSets";
-import NerisValidationResult from "@/components/NerisValidationResult";
+import NerisValidationStatusCard from "@/components/NerisValidationStatusCard";
 import {
   CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp,
   Download, RefreshCw, Eye, ArrowRight, Info, Copy, ClipboardCheck,
@@ -251,10 +251,6 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
     setBackendValidationResult(null);
 
     const validated_at = new Date().toISOString();
-
-    // buildApiPayload() already produces the clean body (no _internal fields,
-    // no call_type, no dispatch.primary_type — those are never added by translateToNeris).
-    // Do NOT reshape it here; Apps Script runs shapePayloadForRemoteValidate_() as final safety.
     const cleanBody = apiPayload;
 
     const requestPayload = {
@@ -267,7 +263,6 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
 
     let result;
     try {
-      // Route through backend function to avoid CORS with Google Apps Script
       const proxyResp = await base44.functions.invoke("nerisValidateProxy", {
         proxyUrl,
         requestPayload,
@@ -288,6 +283,8 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
         error_message: success ? null : (asObj.error || `HTTP ${http_status}`),
         request_body_snapshot: cleanBody,
         route: "apps_script_proxy",
+        incident_id_source_used: asObj.incident_id_source_used || null,
+        incident_number_used: asObj.incident_number_used || (cleanBody?.base?.incident_number) || null,
       };
     } catch (e) {
       result = {
@@ -300,21 +297,56 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
         error_message: e.message,
         request_body_snapshot: cleanBody,
         route: "fetch_error",
+        incident_id_source_used: null,
+        incident_number_used: null,
       };
     }
 
+    // Determine status
+    const validation_status = result.success ? "VALID" : (result.http_status ? "INVALID" : "ERROR");
+    result.status = validation_status;
+
     setBackendValidationResult(result);
 
-    // Save validation result back to the incident record
-    const validation_status = result.success ? "VALID" : (result.http_status ? "INVALID" : "ERROR");
+    // 1. Update Incident record with latest validation state
+    // 2. Append a NerisValidationLog entry for full audit trail
     try {
-      await base44.entities.Incident.update(incidentId, {
-        neris_validation_status: validation_status,
-        neris_validation_message: result.error_message || (result.success ? "Validation passed" : "Validation failed"),
-        neris_validation_result_json: JSON.stringify(result),
-        neris_last_validated_at: validated_at,
-      });
-      queryClient.invalidateQueries({ queryKey: ["incident", form.id] });
+      const [me] = await Promise.allSettled([base44.auth.me()]);
+      const userEmail = me.status === "fulfilled" ? me.value?.email : null;
+
+      await Promise.all([
+        base44.entities.Incident.update(incidentId, {
+          neris_validation_status: validation_status,
+          neris_validation_message: result.error_message || (result.success ? "Validation passed" : "Validation failed"),
+          neris_last_validated_at: validated_at,
+          neris_validation_environment: env,
+          neris_validation_http_status: result.http_status,
+          neris_validation_endpoint: result.endpoint_used,
+          neris_validation_route: result.route,
+          neris_incident_id_source_used: result.incident_id_source_used,
+          neris_incident_number_used: result.incident_number_used,
+          neris_validation_request_snapshot_json: JSON.stringify(result.request_body_snapshot),
+          neris_validation_result_json: JSON.stringify(result),
+        }),
+        base44.entities.NerisValidationLog.create({
+          incident_id: incidentId,
+          nfirs_id: form.nfirs_id || null,
+          validated_at,
+          environment: env,
+          route: result.route,
+          endpoint_used: result.endpoint_used,
+          http_status: result.http_status,
+          success: result.success,
+          incident_id_source_used: result.incident_id_source_used,
+          incident_number_used: result.incident_number_used,
+          request_body_snapshot: JSON.stringify(result.request_body_snapshot),
+          response_body: JSON.stringify(result.response_body),
+          error_message: result.error_message,
+          validated_by_email: userEmail,
+        }),
+      ]);
+
+      queryClient.invalidateQueries({ queryKey: ["incident", incidentId] });
     } catch (_) {}
 
     setValidating(false);
@@ -469,19 +501,12 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
             </div>
           )}
 
-          {/* Saved status badge */}
-          {form.neris_validation_status && form.neris_validation_status !== "NOT_VALIDATED" && (
+          {/* Live result badge (just ran) */}
+          {backendValidationResult && (
             <span className={`text-xs px-2 py-1 rounded font-semibold ${
-              form.neris_validation_status === "VALID" ? "bg-green-100 text-green-700"
-              : form.neris_validation_status === "INVALID" ? "bg-red-100 text-red-700"
-              : "bg-amber-100 text-amber-700"
+              backendValidationResult.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
             }`}>
-              Last: {form.neris_validation_status}
-              {form.neris_last_validated_at && (
-                <span className="font-normal ml-1 text-slate-500">
-                  @ {new Date(form.neris_last_validated_at).toLocaleString()}
-                </span>
-              )}
+              {backendValidationResult.success ? "✓ VALID" : "✗ " + (backendValidationResult.status || "FAILED")}
             </span>
           )}
         </div>
@@ -636,8 +661,25 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
         {/* Client-side result */}
         <ValidationResult result={validationResult} />
 
-        {/* Backend result */}
-        <NerisValidationResult result={backendValidationResult} />
+        {/* Live backend result (just ran) */}
+        {backendValidationResult && (
+          <NerisValidationStatusCard statusData={backendValidationResult} />
+        )}
+
+        {/* Persisted status card (loaded from record, shown only if no live result) */}
+        {!backendValidationResult && form.neris_validation_status && form.neris_validation_status !== "NOT_VALIDATED" && (
+          <NerisValidationStatusCard statusData={{
+            status: form.neris_validation_status,
+            validated_at: form.neris_last_validated_at,
+            environment: form.neris_validation_environment,
+            incident_id_source_used: form.neris_incident_id_source_used,
+            incident_number_used: form.neris_incident_number_used,
+            endpoint_used: form.neris_validation_endpoint,
+            http_status: form.neris_validation_http_status,
+            error_message: form.neris_validation_message,
+            response_body: (() => { try { return JSON.parse(form.neris_validation_result_json || "null")?.response_body; } catch { return null; } })(),
+          }} />
+        )}
       </div>
 
       {/* API submit — requires backend function */}

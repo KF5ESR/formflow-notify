@@ -1,0 +1,66 @@
+{
+  "name": "NerisValidationLog",
+  "type": "object",
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "title": "Incident Record ID"
+    },
+    "nfirs_id": {
+      "type": "string",
+      "title": "NFIRS ID"
+    },
+    "validated_at": {
+      "type": "string",
+      "title": "Validated At"
+    },
+    "environment": {
+      "type": "string",
+      "title": "Environment"
+    },
+    "route": {
+      "type": "string",
+      "title": "Route"
+    },
+    "endpoint_used": {
+      "type": "string",
+      "title": "Endpoint Used"
+    },
+    "http_status": {
+      "type": "number",
+      "title": "HTTP Status"
+    },
+    "success": {
+      "type": "boolean",
+      "title": "Success"
+    },
+    "incident_id_source_used": {
+      "type": "string",
+      "title": "Incident ID Source Used"
+    },
+    "incident_number_used": {
+      "type": "string",
+      "title": "Incident Number Used"
+    },
+    "request_body_snapshot": {
+      "type": "string",
+      "title": "Request Body Snapshot (JSON)"
+    },
+    "response_body": {
+      "type": "string",
+      "title": "Response Body (JSON)"
+    },
+    "error_message": {
+      "type": "string",
+      "title": "Error Message"
+    },
+    "validated_by_email": {
+      "type": "string",
+      "title": "Validated By (Email)"
+    }
+  },
+  "required": [
+    "incident_id",
+    "validated_at"
+  ]
+}
