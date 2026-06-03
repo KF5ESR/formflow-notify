@@ -72,24 +72,14 @@
   "rls": {
     "create": {
       "user_condition": {
-        "role": {
-          "$in": [
-            "super_admin",
-            "admin"
-          ]
-        }
+        "role": "super_admin"
       }
     },
     "read": {
       "$or": [
         {
           "user_condition": {
-            "role": {
-              "$in": [
-                "super_admin",
-                "admin"
-              ]
-            }
+            "role": "super_admin"
           }
         },
         {
@@ -101,12 +91,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": {
-              "$in": [
-                "super_admin",
-                "admin"
-              ]
-            }
+            "role": "super_admin"
           }
         },
         {
@@ -116,11 +101,7 @@
             },
             {
               "user_condition": {
-                "role": {
-                  "$in": [
-                    "dept_admin"
-                  ]
-                }
+                "role": "dept_admin"
               }
             }
           ]
@@ -129,12 +110,7 @@
     },
     "delete": {
       "user_condition": {
-        "role": {
-          "$in": [
-            "super_admin",
-            "admin"
-          ]
-        }
+        "role": "super_admin"
       }
     }
   }

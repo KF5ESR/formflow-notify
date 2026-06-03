@@ -66,5 +66,69 @@
   "required": [
     "incident_id",
     "validated_at"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.department_id": "{{user.department_id}}"
+            },
+            {
+              "user_condition": {
+                "role": {
+                  "$in": [
+                    "dept_admin",
+                    "reviewer"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "data.department_id": "{{user.department_id}}"
+            },
+            {
+              "user_condition": {
+                "role": {
+                  "$in": [
+                    "dept_admin",
+                    "reviewer"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "super_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "super_admin"
+      }
+    }
+  }
 }
