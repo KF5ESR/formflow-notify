@@ -32,7 +32,7 @@ export default function DepartmentSetupBanner() {
   }
 
   // No department linked to user
-  if (!departmentId || !department) {
+  if (!isSuperAdmin && (!departmentId || !department)) {
     return (
       <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center gap-3 text-sm">
         <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
