@@ -7,22 +7,19 @@
  * This component keeps the three JSON layers separate and visible.
  * Actual API calls (validate/submit) require a backend function with NERIS credentials.
  */
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { buildNerisPayload } from "@/utils/nerisPayload";
 import { translateToNeris, validateNerisPayload, diffLayers, buildApiPayload } from "@/utils/nerisTranslator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { useState as useStateVS, useEffect, useCallback } from "react";
 import { getIncidentTypeOptions, getActionTacticOptions, GITHUB_REFS, clearCache, getCacheAge } from "@/utils/nerisValueSets";
+import NerisValidationResult from "@/components/NerisValidationResult";
 import {
   CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp,
   Download, RefreshCw, Eye, ArrowRight, Info, Copy, ClipboardCheck,
-  Github, Database, Clock
+  Github, Database, Clock, Shield, Loader2
 } from "lucide-react";
 
 const ENV_COLORS = { TEST: "bg-amber-100 text-amber-700", PROD: "bg-red-100 text-red-700" };
@@ -110,7 +107,7 @@ function DiffView({ changes }) {
 }
 
 function ValueSetStatus() {
-  const [status, setStatus] = useStateVS({
+  const [status, setStatus] = useState({
     loading: false, incidentCount: null, actionCount: null, error: null, fetchedAt: null
   });
 
@@ -213,8 +210,11 @@ function ValueSetStatus() {
 
 export default function NerisPanel({ form, units, responders }) {
   const [validationResult, setValidationResult] = useState(null);
+  const [backendValidationResult, setBackendValidationResult] = useState(null);
   const [showDiff, setShowDiff] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const queryClient = useQueryClient();
 
   // Load NERIS config record (use first/only record per FD)
   const { data: configs = [] } = useQuery({
@@ -237,9 +237,38 @@ export default function NerisPanel({ form, units, responders }) {
   const diffs = useMemo(() => diffLayers(faJson, nerisPayload), [faJson, nerisPayload]);
 
   const handleValidate = () => {
-    // Validate the clean API payload (no internal fields)
+    // Client-side schema checks only
     const result = validateNerisPayload(apiPayload);
     setValidationResult(result);
+  };
+
+  const handleBackendValidate = async () => {
+    if (!form.id) return;
+    setValidating(true);
+    setBackendValidationResult(null);
+    try {
+      const result = await base44.functions.invoke("validateNerisIncident", {
+        incident_id: form.id,
+        api_body: apiPayload,
+        environment: env,
+      });
+      setBackendValidationResult(result);
+      // Refresh the incident record to pick up saved validation fields
+      queryClient.invalidateQueries({ queryKey: ["incident", form.id] });
+    } catch (e) {
+      setBackendValidationResult({
+        success: false,
+        http_status: null,
+        validated_at: new Date().toISOString(),
+        environment: env,
+        endpoint_used: "validateNerisIncident (backend function)",
+        response_body: null,
+        error_message: e.message,
+        request_body_snapshot: apiPayload,
+        route: "backend_invoke_failed",
+      });
+    }
+    setValidating(false);
   };
 
   const handleExportFA = () => {
@@ -364,14 +393,68 @@ export default function NerisPanel({ form, units, responders }) {
         defaultOpen={true}
       />
 
-      {/* Client-side Validate */}
+      {/* Validate buttons */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Button type="button" onClick={handleValidate} className="bg-blue-600 hover:bg-blue-700 text-white">
-            <RefreshCw className="w-4 h-4 mr-2" /> Validate Payload (client-side)
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Client-side */}
+          <Button type="button" onClick={handleValidate} variant="outline" className="text-xs">
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Check (client-side)
           </Button>
+
+          {/* Backend proxy → NERIS /validate */}
+          <Button
+            type="button"
+            onClick={handleBackendValidate}
+            disabled={validating || !form.id}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
+          >
+            {validating
+              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Validating…</>
+              : <><Shield className="w-3.5 h-3.5 mr-1.5" /> Validate via NERIS API</>}
+          </Button>
+
+          {/* Saved status badge */}
+          {form.neris_validation_status && form.neris_validation_status !== "NOT_VALIDATED" && (
+            <span className={`text-xs px-2 py-1 rounded font-semibold ${
+              form.neris_validation_status === "VALID" ? "bg-green-100 text-green-700"
+              : form.neris_validation_status === "INVALID" ? "bg-red-100 text-red-700"
+              : "bg-amber-100 text-amber-700"
+            }`}>
+              Last: {form.neris_validation_status}
+              {form.neris_last_validated_at && (
+                <span className="font-normal ml-1 text-slate-500">
+                  @ {new Date(form.neris_last_validated_at).toLocaleString()}
+                </span>
+              )}
+            </span>
+          )}
         </div>
+
+        {/* Backend validation — architecture note */}
+        <div className="flex items-start gap-2 text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+          <Info className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+          <div className="text-slate-500 space-y-0.5">
+            <div>
+              <strong className="text-slate-600">Validate via NERIS API</strong> sends the exact{" "}
+              <code className="bg-slate-100 px-1 rounded">buildApiPayload()</code> body through a
+              backend function proxy to{" "}
+              <code className="bg-slate-100 px-1 rounded">POST /incident/{"{entity_id}"}/validate</code>.
+            </div>
+            <div>
+              Route: <strong>Base44 → backend function → Apps Script WebApp → NERIS</strong>{" "}
+              (Apps Script holds the NERIS token; no token is ever exposed in the browser).
+              Requires <code className="bg-slate-100 px-1 rounded">NERIS_APPS_SCRIPT_URL</code> or{" "}
+              <code className="bg-slate-100 px-1 rounded">NERIS_API_TOKEN</code> in backend secrets,
+              and a <strong>Builder+ plan</strong> for backend functions.
+            </div>
+          </div>
+        </div>
+
+        {/* Client-side result */}
         <ValidationResult result={validationResult} />
+
+        {/* Backend result */}
+        <NerisValidationResult result={backendValidationResult} />
       </div>
 
       {/* API submit — requires backend function */}

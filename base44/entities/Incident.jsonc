@@ -194,6 +194,29 @@
     "email_status": {
       "type": "string",
       "title": "Email Status"
+    },
+    "neris_validation_status": {
+      "type": "string",
+      "enum": [
+        "NOT_VALIDATED",
+        "VALID",
+        "INVALID",
+        "ERROR"
+      ],
+      "title": "NERIS Validation Status",
+      "default": "NOT_VALIDATED"
+    },
+    "neris_validation_message": {
+      "type": "string",
+      "title": "NERIS Validation Message"
+    },
+    "neris_validation_result_json": {
+      "type": "string",
+      "title": "NERIS Validation Result (JSON)"
+    },
+    "neris_last_validated_at": {
+      "type": "string",
+      "title": "NERIS Last Validated At"
     }
   },
   "required": [
