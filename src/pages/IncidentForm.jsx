@@ -493,7 +493,7 @@ export default function IncidentForm() {
 
           {/* NERIS Translation Engine */}
           <Section title="NERIS Translation Engine" badge="Admin Only" fullGrid>
-            <NerisPanel form={form} units={units} responders={responders} />
+            <NerisPanel form={form} incidentId={id} units={units} responders={responders} />
           </Section>
 
           {/* Actions */}

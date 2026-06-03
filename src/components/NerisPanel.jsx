@@ -208,7 +208,7 @@ function ValueSetStatus() {
   );
 }
 
-export default function NerisPanel({ form, units, responders }) {
+export default function NerisPanel({ form, incidentId, units, responders }) {
   const [validationResult, setValidationResult] = useState(null);
   const [backendValidationResult, setBackendValidationResult] = useState(null);
   const [showDiff, setShowDiff] = useState(false);
@@ -243,7 +243,7 @@ export default function NerisPanel({ form, units, responders }) {
   };
 
   const handleBackendValidate = async () => {
-    if (!form.id) return;
+    if (!incidentId) return;
     const proxyUrl = config.apps_script_validate_url;
     if (!proxyUrl) return;
 
@@ -313,7 +313,7 @@ export default function NerisPanel({ form, units, responders }) {
     // Save validation result back to the incident record
     const validation_status = result.success ? "VALID" : (result.http_status ? "INVALID" : "ERROR");
     try {
-      await base44.entities.Incident.update(form.id, {
+      await base44.entities.Incident.update(incidentId, {
         neris_validation_status: validation_status,
         neris_validation_message: result.error_message || (result.success ? "Validation passed" : "Validation failed"),
         neris_validation_result_json: JSON.stringify(result),
@@ -460,7 +460,7 @@ export default function NerisPanel({ form, units, responders }) {
             <Button
               type="button"
               onClick={handleBackendValidate}
-              disabled={validating || !form.id}
+              disabled={validating || !incidentId}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
             >
               {validating
