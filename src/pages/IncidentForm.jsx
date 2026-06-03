@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { useDepartment } from "@/lib/DepartmentContext";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,8 +113,15 @@ export default function IncidentForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
+  const { department } = useDepartment();
   const isEdit = !!id;
   const isAdmin = currentUser?.role === "admin";
+
+  // Set FD_OPTIONS based on user role
+  const FD_OPTIONS_FILTERED = useMemo(() => {
+    if (isAdmin) return FD_OPTIONS; // Admins see all FDs
+    return department ? [department.department_name] : []; // Non-admins see only their department
+  }, [isAdmin, department]);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [units, setUnits] = useState([]);
@@ -126,17 +134,20 @@ export default function IncidentForm() {
   });
 
   useEffect(() => {
-    if (existing) {
-      const merged = { ...EMPTY_FORM };
-      Object.keys(EMPTY_FORM).forEach((k) => {
-        if (existing[k] !== undefined && existing[k] !== null) merged[k] = String(existing[k]);
-      });
-      merged.neris_logged = existing.neris_logged === true;
-      setForm(merged);
+   if (existing) {
+     const merged = { ...EMPTY_FORM };
+     Object.keys(EMPTY_FORM).forEach((k) => {
+       if (existing[k] !== undefined && existing[k] !== null) merged[k] = String(existing[k]);
+     });
+     merged.neris_logged = existing.neris_logged === true;
+     setForm(merged);
+   } else if (department && !isAdmin) {
+     // For new incidents, default select_fd to user's department
+     setForm((f) => ({ ...f, select_fd: department.department_name }));
       try { setUnits(JSON.parse(existing.units_json || "[]")); } catch (_) { setUnits([]); }
       try { setResponders(JSON.parse(existing.responders_json || "[]")); } catch (_) { setResponders([]); }
     }
-  }, [existing]);
+  }, [existing, department, isAdmin]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target ? e.target.value : e }));
   const setNarr = (key, val) => setForm((f) => ({ ...f, [key]: val }));
@@ -378,11 +389,11 @@ export default function IncidentForm() {
             fullGrid
           >
             <div className="mb-3">
-              <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Select FD</Label>
-              <Select value={form.select_fd} onValueChange={set("select_fd")}>
-                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>{FD_OPTIONS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-              </Select>
+             <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Select FD</Label>
+             <Select value={form.select_fd} onValueChange={set("select_fd")}>
+               <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+               <SelectContent>{FD_OPTIONS_FILTERED.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+             </Select>
             </div>
             <UnitSection units={units} onChange={setUnits} globalDispatch={form.dispatch_time} responders={responders} />
           </Section>
