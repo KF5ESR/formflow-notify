@@ -4,10 +4,13 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { DepartmentProvider } from '@/lib/DepartmentContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
 import Home from './pages/Home';
 import IncidentForm from './pages/IncidentForm';
+import AdminDepartments from './pages/AdminDepartments';
+import AdminDepartmentConfig from './pages/AdminDepartmentConfig';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -38,6 +41,8 @@ const AuthenticatedApp = () => {
       <Route path="/" element={<Home />} />
       <Route path="/incident/new" element={<IncidentForm />} />
       <Route path="/incident/:id" element={<IncidentForm />} />
+      <Route path="/admin/departments" element={<AdminDepartments />} />
+      <Route path="/admin/departments/:id/config" element={<AdminDepartmentConfig />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
@@ -50,7 +55,9 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <DepartmentProvider>
+            <AuthenticatedApp />
+          </DepartmentProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>

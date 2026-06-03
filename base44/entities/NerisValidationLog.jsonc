@@ -2,6 +2,10 @@
   "name": "NerisValidationLog",
   "type": "object",
   "properties": {
+    "department_id": {
+      "type": "string",
+      "title": "Department ID"
+    },
     "incident_id": {
       "type": "string",
       "title": "Incident Record ID"

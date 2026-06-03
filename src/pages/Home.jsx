@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List } from "lucide-react";
+import { Plus, Flame, Search, Edit2, Trash2, CheckCircle, Clock, AlertCircle, Table, List, Building2 } from "lucide-react";
+import { useDepartment } from "@/lib/DepartmentContext";
+import { useAuth } from "@/lib/AuthContext";
+import DepartmentSetupBanner from "@/components/DepartmentSetupBanner";
 
 const TYPE_COLORS = {
   "Fire": "bg-red-100 text-red-700",
@@ -43,12 +46,21 @@ function NerisStatus({ incident }) {
 
 export default function Home() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const { department, scopeFilter, isSuperAdmin, loading: deptLoading } = useDepartment();
   const [search, setSearch] = useState("");
   const [view, setView] = useState("list"); // "list" | "raw"
 
   const { data: incidents = [], isLoading } = useQuery({
-    queryKey: ["incidents"],
-    queryFn: () => base44.entities.Incident.list("-created_date", 200),
+    queryKey: ["incidents", currentUser?.department_id],
+    queryFn: () => {
+      const filter = scopeFilter();
+      return Object.keys(filter).length > 0
+        ? base44.entities.Incident.filter(filter, "-created_date", 200)
+        : base44.entities.Incident.list("-created_date", 200);
+    },
+    enabled: !deptLoading,
   });
 
   const deleteIncident = useMutation({
@@ -84,11 +96,16 @@ export default function Home() {
               <Flame className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Petit Jean FD</h1>
+              <h1 className="text-2xl font-bold text-slate-900">{department?.short_name || department?.department_name || "FAST ATTACK"}</h1>
               <p className="text-sm text-slate-500">Incident Run Sheet</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {(isSuperAdmin || currentUser?.role === "dept_admin") && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/admin/departments")} className="text-slate-600 hidden md:flex">
+                <Building2 className="w-3.5 h-3.5 mr-1.5" /> Departments
+              </Button>
+            )}
             <div className="flex rounded-lg border border-slate-200 overflow-hidden bg-white">
               <button onClick={() => setView("list")} className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${view === "list" ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50"}`}>
                 <List className="w-3.5 h-3.5" /> List
@@ -103,6 +120,11 @@ export default function Home() {
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Department setup banner */}
+        <div className="mb-5">
+          <DepartmentSetupBanner />
         </div>
 
         {/* Stats */}

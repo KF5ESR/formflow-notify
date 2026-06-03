@@ -2,6 +2,10 @@
   "name": "NerisConfig",
   "type": "object",
   "properties": {
+    "department_id": {
+      "type": "string",
+      "title": "Department ID"
+    },
     "env": {
       "type": "string",
       "enum": [
@@ -23,6 +27,44 @@
       "type": "string",
       "title": "Fire Department Name"
     },
+    "incident_id_source": {
+      "type": "string",
+      "enum": [
+        "NFIRS_ID",
+        "PSRID",
+        "AUTO"
+      ],
+      "title": "Incident ID Source",
+      "default": "NFIRS_ID"
+    },
+    "apps_script_validate_url": {
+      "type": "string",
+      "title": "Apps Script Validate URL"
+    },
+    "validation_test_status": {
+      "type": "string",
+      "enum": [
+        "NOT_TESTED",
+        "PASSED",
+        "FAILED"
+      ],
+      "default": "NOT_TESTED",
+      "title": "Validation Test Status"
+    },
+    "last_successful_validation_at": {
+      "type": "string",
+      "title": "Last Successful Validation At"
+    },
+    "config_status": {
+      "type": "string",
+      "enum": [
+        "INCOMPLETE",
+        "COMPLETE",
+        "VERIFIED"
+      ],
+      "default": "INCOMPLETE",
+      "title": "Config Status"
+    },
     "default_state": {
       "type": "string",
       "title": "Default State Code (e.g. AR)"
@@ -37,15 +79,11 @@
     },
     "use_gh_valuesets": {
       "type": "boolean",
-      "title": "Use GitHub Value Sets for incident type mapping"
+      "title": "Use GitHub Value Sets"
     },
     "calltype_aliases": {
       "type": "string",
       "title": "Custom Call Type Aliases (one per line: from=to)"
-    },
-    "apps_script_validate_url": {
-      "type": "string",
-      "title": "Apps Script Validate URL (WebApp endpoint for NERIS /validate proxy)"
     },
     "last_post_status": {
       "type": "string",
@@ -53,6 +91,7 @@
     }
   },
   "required": [
+    "department_id",
     "env"
   ]
 }

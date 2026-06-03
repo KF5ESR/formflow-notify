@@ -2,6 +2,10 @@
   "name": "Incident",
   "type": "object",
   "properties": {
+    "department_id": {
+      "type": "string",
+      "title": "Department ID"
+    },
     "nfirs_id": {
       "type": "string",
       "title": "NFIRS ID"

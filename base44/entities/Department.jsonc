@@ -1,0 +1,72 @@
+{
+  "name": "Department",
+  "type": "object",
+  "properties": {
+    "department_name": {
+      "type": "string",
+      "title": "Department Name"
+    },
+    "short_name": {
+      "type": "string",
+      "title": "Short Name / Abbreviation"
+    },
+    "fdid": {
+      "type": "string",
+      "title": "FDID"
+    },
+    "neris_entity_id": {
+      "type": "string",
+      "title": "NERIS Entity ID"
+    },
+    "county": {
+      "type": "string",
+      "title": "County"
+    },
+    "state": {
+      "type": "string",
+      "title": "State (2-letter)"
+    },
+    "logo_url": {
+      "type": "string",
+      "title": "Logo URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "INACTIVE",
+        "SUSPENDED"
+      ],
+      "default": "ACTIVE",
+      "title": "Status"
+    },
+    "onboarding_status": {
+      "type": "string",
+      "enum": [
+        "DEPARTMENT_CREATED",
+        "PROFILE_COMPLETE",
+        "USERS_ASSIGNED",
+        "UNITS_CONFIGURED",
+        "NERIS_CONFIG_ADDED",
+        "APPS_SCRIPT_ADDED",
+        "TEST_VALIDATION_PASSED",
+        "PRODUCTION_READY"
+      ],
+      "default": "DEPARTMENT_CREATED",
+      "title": "Onboarding Status"
+    },
+    "neris_enabled": {
+      "type": "boolean",
+      "title": "NERIS Enabled",
+      "default": false
+    },
+    "production_enabled": {
+      "type": "boolean",
+      "title": "Production Posting Enabled",
+      "default": false
+    }
+  },
+  "required": [
+    "department_name"
+  ]
+}
