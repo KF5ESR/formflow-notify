@@ -68,5 +68,74 @@
   },
   "required": [
     "department_name"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "super_admin",
+            "admin"
+          ]
+        }
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "super_admin",
+                "admin"
+              ]
+            }
+          }
+        },
+        {
+          "id": "{{user.department_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$in": [
+                "super_admin",
+                "admin"
+              ]
+            }
+          }
+        },
+        {
+          "$and": [
+            {
+              "id": "{{user.department_id}}"
+            },
+            {
+              "user_condition": {
+                "role": {
+                  "$in": [
+                    "dept_admin"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": {
+          "$in": [
+            "super_admin",
+            "admin"
+          ]
+        }
+      }
+    }
+  }
 }
