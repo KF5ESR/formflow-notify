@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/AuthContext";
 const DepartmentContext = createContext(null);
 
 export function DepartmentProvider({ children }) {
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [department, setDepartment] = useState(null);
   const [nerisConfig, setNerisConfig] = useState(null);
   const [loading, setLoading] = useState(true);
