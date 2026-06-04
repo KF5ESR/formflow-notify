@@ -20,12 +20,39 @@ Deno.serve(async (req) => {
     }
 
     // Make the request server-side — no CORS issues
-    const resp = await fetch(proxyUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestPayload),
-      redirect: 'follow',
-    });
+    // 55s timeout: Apps Script has a 60s execution limit; we abort just before that.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+
+    let resp;
+    try {
+      resp = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload),
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      const isAbort = fetchErr.name === 'AbortError';
+      return Response.json({
+        error: isAbort
+          ? 'Apps Script request timed out after 55s — the WebApp may be cold-starting or experiencing high load. Try again in 30 seconds.'
+          : `Apps Script gateway error: ${fetchErr.message}. This is likely a Google Apps Script cold-start or 502 issue, not a NERIS API error. Try again in a moment.`,
+        http_status: isAbort ? 504 : 502,
+      }, { status: isAbort ? 504 : 502 });
+    }
+    clearTimeout(timeout);
+
+    // If Apps Script itself returned a 5xx, provide a clear message
+    if (resp.status >= 500) {
+      const errText = await resp.text().catch(() => '');
+      return Response.json({
+        error: `Apps Script gateway returned HTTP ${resp.status}. This is a Google Apps Script issue (cold-start, quota, or unhandled exception in doPost), not a NERIS API error. Try again in 30 seconds. Raw: ${errText.substring(0, 200)}`,
+        http_status: resp.status,
+      }, { status: 200 }); // return 200 so the caller can read the body
+    }
 
     const text = await resp.text();
     let respBody;

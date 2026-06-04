@@ -267,7 +267,43 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
         proxyUrl,
         requestPayload,
       });
-      const { http_status, response_body } = proxyResp.data;
+      // Proxy may return a top-level error (Apps Script 5xx / timeout) or a normal response
+      const { http_status, response_body, error: proxyError } = proxyResp.data;
+
+      // If the proxy itself reported an Apps Script gateway error, surface it clearly
+      if (proxyError && !response_body) {
+        result = {
+          success: false,
+          http_status: http_status || null,
+          validated_at,
+          environment: env,
+          endpoint_used: proxyUrl,
+          response_body: null,
+          error_message: proxyError,
+          request_body_snapshot: cleanBody,
+          route: "apps_script_gateway_error",
+          incident_id_source_used: null,
+          incident_number_used: null,
+        };
+        result.status = "ERROR";
+        setBackendValidationResult(result);
+        // Still persist the error to the log
+        try {
+          await Promise.all([
+            base44.entities.Incident.update(incidentId, {
+              neris_validation_status: "ERROR",
+              neris_validation_message: proxyError,
+              neris_last_validated_at: validated_at,
+              neris_validation_environment: env,
+              neris_validation_http_status: http_status || null,
+              neris_validation_endpoint: proxyUrl,
+              neris_validation_route: "apps_script_gateway_error",
+            }),
+          ]);
+        } catch (_) {}
+        setValidating(false);
+        return;
+      }
 
       const httpOk = http_status >= 200 && http_status < 300;
       const asObj = (typeof response_body === "object" && response_body !== null) ? response_body : {};
