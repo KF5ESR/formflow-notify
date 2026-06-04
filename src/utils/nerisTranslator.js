@@ -366,12 +366,57 @@ export function translateToNeris(faJson, config = {}) {
     return canonicalizeUnitTimes(raw);
   }).filter(u => u.reported_unit_id || u.unit_neris_id);
 
-  // ── Fire suppression/alarm modules (required for FIRE||STRUCTURE_FIRE incidents) ────
+  // ── Fire modules (required for FIRE incidents) ───────────────────────────────
+  //
+  // The NERIS payload has TWO separate top-level keys:
+  //
+  //   fire_detail  — location, water, suppression appliances, investigation
+  //   smoke_alarm / fire_alarm / other_alarm / fire_suppression  — risk reduction
+  //
+  // Both are built here from faJson.fire_modules (the shape stored in the record).
+  //
   const fireModules = faJson.fire_modules || null;
   const isStructureFire = primaryCode.startsWith('FIRE||STRUCTURE_FIRE');
 
-  const buildFireModules = (m) => {
-    if (!m) return null;
+  // Build fire_detail node
+  const buildFireDetail = (m) => {
+    const fd = m?.fire_detail || {};
+    const ld = fd.location_detail || {};
+    const detail = {
+      location_detail: {
+        type: ld.type || 'STRUCTURE',
+        arrival_condition: ld.arrival_condition || undefined,
+        progression_evident: ld.progression_evident === true,
+        damage_type: ld.damage_type || undefined,
+        floor_of_origin: ld.floor_of_origin != null ? Number(ld.floor_of_origin) : 1,
+        room_of_origin_type: ld.room_of_origin_type || undefined,
+        cause: ld.cause || undefined,
+      },
+      water_supply: fd.water_supply || undefined,
+      suppression_appliances: Array.isArray(fd.suppression_appliances) && fd.suppression_appliances.length
+        ? fd.suppression_appliances : undefined,
+      investigation_needed: fd.investigation_needed || undefined,
+      investigation_types: Array.isArray(fd.investigation_types) && fd.investigation_types.length
+        ? fd.investigation_types : undefined,
+    };
+    // Strip undefined inside location_detail
+    Object.keys(detail.location_detail).forEach(k => {
+      if (detail.location_detail[k] === undefined) delete detail.location_detail[k];
+    });
+    // Strip undefined at detail level
+    Object.keys(detail).forEach(k => { if (detail[k] === undefined) delete detail[k]; });
+    return detail;
+  };
+
+  // Build risk reduction nodes (top-level, separate from fire_detail)
+  const buildRiskReduction = (m) => {
+    const defaults = {
+      smoke_alarm: { present: false, alerted_occupants: false, effectiveness: 'UNDETERMINED' },
+      fire_alarm:  { present: false, operated: false, effectiveness: 'UNDETERMINED' },
+      other_alarm: { present: false, alerted_occupants: false },
+      fire_suppression: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
+    };
+    if (!m) return defaults;
     return {
       smoke_alarm: {
         present: !!m.smoke_alarm?.present,
@@ -438,17 +483,10 @@ export function translateToNeris(faJson, config = {}) {
     // Incident types array (canonical hierarchy objects)
     incident_types: incidentTypes,
 
-    // fire_detail — required when incident type is FIRE||STRUCTURE_FIRE.
-    // smoke_alarm, fire_alarm, other_alarm, fire_suppression are nested inside fire_detail,
-    // NOT at the top level (top-level fire_modules causes extra_forbidden 422).
-    ...(isStructureFire ? {
-      fire_detail: buildFireModules(fireModules) || {
-        smoke_alarm: { present: false, alerted_occupants: false, effectiveness: 'UNDETERMINED' },
-        fire_alarm: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
-        other_alarm: { present: false, alerted_occupants: false },
-        fire_suppression: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
-      }
-    } : {}),
+    // fire_detail — required when at least one FIRE incident type is present.
+    // risk reduction fields (smoke_alarm etc.) are separate top-level keys.
+    ...(isStructureFire ? { fire_detail: buildFireDetail(fireModules) } : {}),
+    ...(isStructureFire ? buildRiskReduction(fireModules) : {}),
   };
 
   // Strip undefined keys at top level
