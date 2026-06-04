@@ -438,10 +438,11 @@ export function translateToNeris(faJson, config = {}) {
     // Incident types array (canonical hierarchy objects)
     incident_types: incidentTypes,
 
-    // Fire modules — required when incident type is FIRE||STRUCTURE_FIRE
-    ...(isStructureFire && fireModules ? { fire_modules: buildFireModules(fireModules) } : {}),
-    ...(isStructureFire && !fireModules ? {
-      fire_modules: buildFireModules(null) || {
+    // fire_detail — required when incident type is FIRE||STRUCTURE_FIRE.
+    // smoke_alarm, fire_alarm, other_alarm, fire_suppression are nested inside fire_detail,
+    // NOT at the top level (top-level fire_modules causes extra_forbidden 422).
+    ...(isStructureFire ? {
+      fire_detail: buildFireModules(fireModules) || {
         smoke_alarm: { present: false, alerted_occupants: false, effectiveness: 'UNDETERMINED' },
         fire_alarm: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
         other_alarm: { present: false, alerted_occupants: false },
