@@ -1,173 +1,134 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Truck } from "lucide-react";
+import { Truck } from "lucide-react";
 
 export const UNIT_TYPES = ["POV", "Engine", "Brush", "Tanker", "Rescue", "Other"];
 
-const EMPTY_UNIT = {
-  unit_id: "",
-  unit_type: "POV",
-  dispatch_time: "",
-  enroute_time: "",
-  on_scene_time: "",
-  clear_time: "",
-  _enroute_auto: true, // POV default: enroute tracks dispatch
-};
+// unitTimes: { [unitId]: { dispatch_time, enroute_time, on_scene_time, clear_time } }
 
-function UnitRow({ unit, index, onChange, onRemove, globalDispatch, autoStaffing, apparatus = [] }) {
-  const handleField = (key, val) => {
-    const updated = { ...unit, [key]: val };
+function UnitCard({ unitId, responders, times, onTimeChange, isPOV }) {
+  const staffing = responders.length;
+  const set = (key, val) => onTimeChange(unitId, { ...times, [key]: val });
 
-    if (key === "unit_type") {
-      const nowPOV = val === "POV";
-      if (nowPOV) {
-        // Switching TO POV: auto-fill enroute = dispatch
-        updated.enroute_time = updated.dispatch_time || globalDispatch || "";
-        updated._enroute_auto = true;
-      } else {
-        // Switching AWAY from POV: clear auto-filled enroute, leave blank
-        if (unit._enroute_auto) {
-          updated.enroute_time = "";
-        }
-        updated._enroute_auto = false;
-      }
+  // POV: enroute = dispatch auto
+  const handleDispatch = (val) => {
+    const updated = { ...times, dispatch_time: val };
+    if (isPOV && (!times.enroute_time || times._enroute_auto)) {
+      updated.enroute_time = val;
+      updated._enroute_auto = true;
     }
-
-    if (key === "dispatch_time") {
-      // Only propagate to enroute if still in auto mode (POV and not manually set)
-      if (unit._enroute_auto && unit.unit_type === "POV") {
-        updated.enroute_time = val;
-      }
-    }
-
-    if (key === "enroute_time") {
-      // Any manual edit breaks auto-sync
-      updated._enroute_auto = false;
-    }
-
-    onChange(index, updated);
+    onTimeChange(unitId, updated);
   };
 
-  const isPOV = unit.unit_type === "POV";
+  const handleEnroute = (val) => {
+    onTimeChange(unitId, { ...times, enroute_time: val, _enroute_auto: false });
+  };
 
   return (
-    <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 relative">
+    <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <Truck className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-semibold text-slate-700">Unit {index + 1}</span>
-          {unit.unit_id && (
-            <span className="text-xs bg-white border border-slate-200 px-2 py-0.5 rounded font-mono">{unit.unit_id}</span>
-          )}
-          <span className={`text-xs px-2 py-0.5 rounded font-medium ${isPOV ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500"}`}>
-            {unit.unit_type}
-          </span>
-          {isPOV && unit._enroute_auto && (
+          <span className="text-sm font-semibold text-slate-700">{unitId}</span>
+          {isPOV && times._enroute_auto && (
             <span className="text-xs text-blue-400">Enroute = Dispatch</span>
           )}
         </div>
-        <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(index)} className="w-7 h-7 text-slate-400 hover:text-red-500">
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Staffing:</span>
+          <span className={`text-sm font-bold px-2 py-0.5 rounded ${staffing > 0 ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-400"}`}>
+            {staffing}
+          </span>
+        </div>
       </div>
 
+      {/* Responder names */}
+      {responders.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {responders.map((r, i) => (
+            <span key={i} className="text-xs bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+              {r.name || `Responder ${i + 1}`}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Times */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
-          <Label className="text-xs text-slate-600 mb-1 block">Unit ID</Label>
-          {apparatus.length > 0 ? (
-            <Select value={unit.unit_id} onValueChange={(v) => handleField("unit_id", v)}>
-              <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select unit..." /></SelectTrigger>
-              <SelectContent>
-                {apparatus.map((a) => <SelectItem key={a.id} value={a.unit_id}>{a.unit_id} ({a.unit_type})</SelectItem>)}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input value={unit.unit_id} onChange={(e) => handleField("unit_id", e.target.value)} placeholder="E555, B560…" className="h-8 text-sm" />
-          )}
-        </div>
-        <div>
-          <Label className="text-xs text-slate-600 mb-1 block">Unit Type</Label>
-          <Select value={unit.unit_type} onValueChange={(v) => handleField("unit_type", v)}>
-            <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>{UNIT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs text-slate-600 mb-1 block">Staffing</Label>
-          <div className={`h-8 flex items-center px-3 rounded-md border text-sm font-medium ${autoStaffing > 0 ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-100 border-slate-200 text-slate-400"}`}>
-            {autoStaffing > 0 ? `${autoStaffing} assigned` : "No responders"}
-          </div>
-        </div>
-        <div>
           <Label className="text-xs text-slate-600 mb-1 block">Dispatch</Label>
-          <Input type="time" value={unit.dispatch_time} onChange={(e) => handleField("dispatch_time", e.target.value)} className="h-8 text-sm" />
+          <Input type="time" value={times.dispatch_time || ""} onChange={(e) => handleDispatch(e.target.value)} className="h-8 text-sm" />
         </div>
         <div>
           <Label className="text-xs text-slate-600 mb-1 block">
             Enroute
-            {isPOV && unit._enroute_auto
-              ? <span className="ml-1 text-blue-400">(auto)</span>
-              : !isPOV
-              ? <span className="ml-1 text-slate-400">(blank until entered)</span>
-              : null
-            }
+            {isPOV && times._enroute_auto && <span className="ml-1 text-blue-400">(auto)</span>}
           </Label>
-          <Input
-            type="time"
-            value={unit.enroute_time}
-            onChange={(e) => handleField("enroute_time", e.target.value)}
-            className={`h-8 text-sm ${!isPOV && !unit.enroute_time ? "bg-slate-100 text-slate-400" : ""}`}
-            placeholder={!isPOV ? "—" : ""}
-          />
+          <Input type="time" value={times.enroute_time || ""} onChange={(e) => handleEnroute(e.target.value)} className="h-8 text-sm" />
         </div>
         <div>
           <Label className="text-xs text-slate-600 mb-1 block">On Scene</Label>
-          <Input type="time" value={unit.on_scene_time} onChange={(e) => handleField("on_scene_time", e.target.value)} className="h-8 text-sm" />
+          <Input type="time" value={times.on_scene_time || ""} onChange={(e) => set("on_scene_time", e.target.value)} className="h-8 text-sm" />
         </div>
         <div>
           <Label className="text-xs text-slate-600 mb-1 block">Unit Clear</Label>
-          <Input type="time" value={unit.clear_time} onChange={(e) => handleField("clear_time", e.target.value)} className="h-8 text-sm" />
+          <Input type="time" value={times.clear_time || ""} onChange={(e) => set("clear_time", e.target.value)} className="h-8 text-sm" />
         </div>
       </div>
     </div>
   );
 }
 
-export default function UnitSection({ units, onChange, globalDispatch, responders = [], apparatus = [] }) {
-  // Build auto-staffing map: unit_id → count of responders assigned to that unit
-  const autoStaffingMap = {};
-  responders.forEach(r => {
-    if (r.assigned_unit) autoStaffingMap[r.assigned_unit] = (autoStaffingMap[r.assigned_unit] || 0) + 1;
-  });
-  const addUnit = () => {
-    const newUnit = {
-      ...EMPTY_UNIT,
-      dispatch_time: globalDispatch || "",
-      enroute_time: globalDispatch || "", // POV default
-      _enroute_auto: true,
-    };
-    onChange([...units, newUnit]);
+// unitTimes: map of unitId -> time fields
+// onUnitTimesChange: (updatedMap) => void
+export default function UnitSection({ responders = [], unitTimes = {}, onUnitTimesChange, globalDispatch }) {
+  // Derive unique units from responders
+  const unitIds = [...new Set(responders.map((r) => r.assigned_unit).filter(Boolean))];
+
+  const handleTimeChange = (unitId, updatedTimes) => {
+    onUnitTimesChange({ ...unitTimes, [unitId]: updatedTimes });
   };
 
-  const updateUnit = (index, updated) => {
-    const next = [...units];
-    next[index] = updated;
-    onChange(next);
+  // Auto-populate dispatch from global if not set
+  const getTimesForUnit = (unitId) => {
+    const existing = unitTimes[unitId] || {};
+    if (!existing.dispatch_time && globalDispatch) {
+      const isPOV = unitId === "POV";
+      return {
+        dispatch_time: globalDispatch,
+        enroute_time: isPOV ? globalDispatch : "",
+        _enroute_auto: isPOV,
+        ...existing,
+      };
+    }
+    return existing;
   };
 
-  const removeUnit = (index) => onChange(units.filter((_, i) => i !== index));
+  if (unitIds.length === 0) {
+    return (
+      <div className="text-sm text-slate-400 italic py-4 text-center border border-dashed border-slate-200 rounded-lg">
+        Units will appear here automatically as you add responders with assigned units below.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      {units.map((unit, i) => (
-        <UnitRow key={i} unit={unit} index={i} onChange={updateUnit} onRemove={removeUnit} globalDispatch={globalDispatch} autoStaffing={autoStaffingMap[unit.unit_id] || 0} apparatus={apparatus} />
-      ))}
-      <Button type="button" variant="outline" onClick={addUnit} className="w-full border-dashed text-slate-500 hover:text-slate-700">
-        <Plus className="w-4 h-4 mr-2" /> Add Unit
-      </Button>
+      {unitIds.map((unitId) => {
+        const assignedResponders = responders.filter((r) => r.assigned_unit === unitId);
+        const times = getTimesForUnit(unitId);
+        const isPOV = unitId === "POV";
+        return (
+          <UnitCard
+            key={unitId}
+            unitId={unitId}
+            responders={assignedResponders}
+            times={times}
+            onTimeChange={handleTimeChange}
+            isPOV={isPOV}
+          />
+        );
+      })}
     </div>
   );
 }

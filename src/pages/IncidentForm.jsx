@@ -124,8 +124,18 @@ export default function IncidentForm() {
   }, [isAdmin, department]);
 
   const [form, setForm] = useState(EMPTY_FORM);
-  const [units, setUnits] = useState([]);
+  const [unitTimes, setUnitTimes] = useState({});
   const [responders, setResponders] = useState([]);
+
+  // Derive units array from responders + unitTimes (for NERIS payload + save)
+  const units = useMemo(() => {
+    const unitIds = [...new Set(responders.map((r) => r.assigned_unit).filter(Boolean))];
+    return unitIds.map((unitId) => {
+      const times = unitTimes[unitId] || {};
+      const staffing = responders.filter((r) => r.assigned_unit === unitId).length;
+      return { unit_id: unitId, unit_type: unitId === "POV" ? "POV" : "Other", staffing, ...times };
+    });
+  }, [responders, unitTimes]);
 
   const { data: existing } = useQuery({
     queryKey: ["incident", id],
@@ -153,12 +163,28 @@ export default function IncidentForm() {
      });
      merged.neris_logged = existing.neris_logged === true;
      setForm(merged);
+     // Load responders
+     try { setResponders(JSON.parse(existing.responders_json || "[]")); } catch (_) { setResponders([]); }
+     // Rebuild unitTimes from saved units array
+     try {
+       const savedUnits = JSON.parse(existing.units_json || "[]");
+       const timesMap = {};
+       savedUnits.forEach((u) => {
+         if (u.unit_id) {
+           timesMap[u.unit_id] = {
+             dispatch_time: u.dispatch_time || "",
+             enroute_time: u.enroute_time || "",
+             on_scene_time: u.on_scene_time || "",
+             clear_time: u.clear_time || "",
+             _enroute_auto: u._enroute_auto || false,
+           };
+         }
+       });
+       setUnitTimes(timesMap);
+     } catch (_) { setUnitTimes({}); }
    } else if (department && !isAdmin) {
-     // For new incidents, default select_fd to user's department
      setForm((f) => ({ ...f, select_fd: department.department_name }));
-      try { setUnits(JSON.parse(existing.units_json || "[]")); } catch (_) { setUnits([]); }
-      try { setResponders(JSON.parse(existing.responders_json || "[]")); } catch (_) { setResponders([]); }
-    }
+   }
   }, [existing, department, isAdmin]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target ? e.target.value : e }));
@@ -416,7 +442,7 @@ export default function IncidentForm() {
                <SelectContent>{FD_OPTIONS_FILTERED.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
              </Select>
             </div>
-            <UnitSection units={units} onChange={setUnits} globalDispatch={form.dispatch_time} responders={responders} apparatus={apparatus} />
+            <UnitSection responders={responders} unitTimes={unitTimes} onUnitTimesChange={setUnitTimes} globalDispatch={form.dispatch_time} />
           </Section>
 
           {/* Responders */}
@@ -451,7 +477,7 @@ export default function IncidentForm() {
                 />
               </div>
             </div>
-            <ResponderSection responders={responders} onChange={setResponders} units={units} members={members} />
+            <ResponderSection responders={responders} onChange={setResponders} apparatus={apparatus} members={members} />
           </Section>
 
           {/* Mutual Aid */}
