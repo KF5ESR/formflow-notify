@@ -248,7 +248,7 @@ export default function IncidentForm() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900">{isEdit ? "Edit Incident" : "New Incident Report"}</h1>
               <p className="text-sm text-slate-500">
-                Petit Jean Fire Department
+                {department?.department_name || "Fire Department"}
                 {isAdmin && <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Admin View</span>}
               </p>
             </div>
