@@ -6,6 +6,7 @@
  * Human label  →  NERIS code (TYPE_RESPONSE_MAP)
  * The Apps Script engine maps these codes to the OpenAPI-spec enum values.
  */
+import { resolveIncidentTypeCode } from './nerisTranslator.js';
 
 // TYPE_RESPONSE_MAP: Human label → { code: NERIS hierarchy, label: display }
 // Source: https://github.com/ulfsri/neris-framework/blob/main/core_schemas/value_sets/csv/type_incident.csv
@@ -174,7 +175,14 @@ function parseAddress(raw) {
  * @returns {object} payload shape expected by the Apps Script engine
  */
 export function buildNerisPayload(form, units, responders) {
-  const incidentType = TYPE_RESPONSE_MAP[form.type_response] || { code: "OTHER", label: form.type_response || "Other" };
+  const resolveType = (raw) => {
+    if (!raw) return null;
+    if (TYPE_RESPONSE_MAP[raw]) return TYPE_RESPONSE_MAP[raw];
+    // Fallback: attempt pattern-based resolution for freetext / legacy values
+    const resolved = resolveIncidentTypeCode(raw);
+    return { code: resolved || "OTHER", label: raw };
+  };
+  const incidentType = resolveType(form.type_response) || { code: "OTHER", label: "Other" };
   const location = parseAddress(form.incident_location);
 
   const alarmISO    = toISO(form.date, form.dispatch_time);
@@ -227,8 +235,8 @@ export function buildNerisPayload(form, units, responders) {
     // Base block (mirrors Apps Script base object)
     base: {
       incident_type: incidentType,
-      incident_type_secondary: form.type_response_2 ? (TYPE_RESPONSE_MAP[form.type_response_2] || { code: "OTHER", label: form.type_response_2 }) : null,
-      incident_type_tertiary: form.type_response_3 ? (TYPE_RESPONSE_MAP[form.type_response_3] || { code: "OTHER", label: form.type_response_3 }) : null,
+      incident_type_secondary: resolveType(form.type_response_2),
+      incident_type_tertiary: resolveType(form.type_response_3),
       narrative: form.notes || "",
       location: location,
       property_type: form.property_type || "",
