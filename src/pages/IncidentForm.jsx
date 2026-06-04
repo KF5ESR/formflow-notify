@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer, AlertTriangle, Download } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer, AlertTriangle, Download, Printer } from "lucide-react";
 import UnitSection from "@/components/UnitSection";
 import ResponderSection from "@/components/ResponderSection";
 import NarrativeGuided, { buildNarrative } from "@/components/NarrativeGuided";
 import { buildNerisPayload, TYPE_RESPONSE_MAP } from "@/utils/nerisPayload";
 import NerisPanel from "@/components/NerisPanel";
+import { generateIncidentPDF } from "@/utils/incidentPDF";
 
 const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
@@ -230,6 +231,12 @@ export default function IncidentForm() {
     URL.revokeObjectURL(url);
   };
 
+  // Print to PDF
+  const handlePrint = () => {
+    const doc = generateIncidentPDF(form, units, responders, department);
+    doc.save(`incident_${form.nfirs_id || "draft"}_${form.date || "nodate"}.pdf`);
+  };
+
   const save = useMutation({
     mutationFn: (data) => isEdit ? base44.entities.Incident.update(id, data) : base44.entities.Incident.create(data),
     onSuccess: () => {
@@ -279,6 +286,9 @@ export default function IncidentForm() {
               </p>
             </div>
           </div>
+          <Button type="button" variant="outline" onClick={handlePrint} className="shrink-0 text-slate-600 border-slate-300">
+            <Printer className="w-4 h-4 mr-2" /> Print (PDF)
+          </Button>
           {isAdmin && (
             <Button type="button" variant="outline" onClick={handleExport} className="shrink-0 text-slate-600 border-slate-300">
               <Download className="w-4 h-4 mr-2" /> Export Payload
