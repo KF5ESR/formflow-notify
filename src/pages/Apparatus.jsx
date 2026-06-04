@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Pencil } from "lucide-react";
 import { useParams } from "react-router-dom";
 import DeptContextHeader from "@/components/DeptContextHeader";
+import ApparatusEditSheet from "@/components/ApparatusEditSheet";
 
 const UNIT_TYPES = ["Engine", "Truck", "Rescue", "Tanker", "Ambulance", "POV", "Other"];
 const STATUSES = ["Available", "In Service", "Out of Service"];
@@ -20,6 +21,7 @@ export default function Apparatus() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ unit_id: "", unit_type: "Engine", description: "", status: "Available" });
+  const [editingUnit, setEditingUnit] = useState(null);
 
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
 
@@ -35,6 +37,14 @@ export default function Apparatus() {
       queryClient.invalidateQueries({ queryKey: ["apparatus"] });
       setForm({ unit_id: "", unit_type: "Engine", description: "", status: "Available" });
       setShowForm(false);
+    },
+  });
+
+  const update = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Apparatus.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["apparatus"] });
+      setEditingUnit(null);
     },
   });
 
@@ -123,7 +133,7 @@ export default function Apparatus() {
                 <TableHead>Type</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
-                {canManage && <TableHead className="text-right">Action</TableHead>}
+                {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -139,9 +149,14 @@ export default function Apparatus() {
                   </TableCell>
                   {canManage && (
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => delete_.mutate(a.id)} className="text-red-600 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingUnit(a)} className="w-8 h-8 text-slate-500 hover:text-slate-700">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => delete_.mutate(a.id)} className="text-red-400 hover:text-red-600 w-8 h-8">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -153,6 +168,15 @@ export default function Apparatus() {
           )}
         </div>
       </div>
+
+      {editingUnit && (
+        <ApparatusEditSheet
+          apparatus={editingUnit}
+          onSave={(data) => update.mutate({ id: editingUnit.id, data })}
+          onClose={() => setEditingUnit(null)}
+          isSaving={update.isPending}
+        />
+      )}
     </div>
   );
 }
