@@ -138,6 +138,7 @@ export function buildNerisPayload(form, units, responders) {
     base: {
       incident_type: incidentType,
       incident_type_secondary: form.type_response_2 ? (TYPE_RESPONSE_MAP[form.type_response_2] || { code: "OTHER", label: form.type_response_2 }) : null,
+      incident_type_tertiary: form.type_response_3 ? (TYPE_RESPONSE_MAP[form.type_response_3] || { code: "OTHER", label: form.type_response_3 }) : null,
       narrative: form.notes || "",
       location: location,
       property_type: form.property_type || "",

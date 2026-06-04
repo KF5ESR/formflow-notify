@@ -47,7 +47,7 @@ const EMPTY_FORM = {
   nfirs_id: "", psrid: "", date: "", dispatch_time: "", first_on_scene_time: "",
   control_time: "", fd_clear_time: "",
   incident_location: "", owner_occupant: "", contact_number: "",
-  nature_of_call: "", investigation: "No", action_taken: "", type_response: "", type_response_2: "",
+  nature_of_call: "", investigation: "No", action_taken: "", type_response: "", type_response_2: "", type_response_3: "",
   property_type: "", value_dollar: "", loss_dollar: "", value_crop: "", value_vehicle: "",
   area: "", vin_lic: "", products: "", patients_injured: "", fatalities: "",
   mutual_aid: "N/A", fdid_received: "", total_amount: "", hydrant_location: "",
@@ -379,6 +379,15 @@ export default function IncidentForm() {
             )}
             <Field label="Type Response (Secondary)">
               <Select value={form.type_response_2} onValueChange={set("type_response_2")}>
+                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>None</SelectItem>
+                  {TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Type Response (Tertiary)">
+              <Select value={form.type_response_3} onValueChange={set("type_response_3")}>
                 <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={null}>None</SelectItem>

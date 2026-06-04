@@ -286,9 +286,14 @@ export function translateToNeris(faJson, config = {}) {
   const rawLabel2 = base.incident_type_secondary?.label || rawType2;
   const codeHierarchy2 = rawLabel2 ? (resolveIncidentTypeCode(rawLabel2) || resolveIncidentTypeCode(rawType2) || rawType2) : '';
 
+  const rawType3 = base.incident_type_tertiary?.code || '';
+  const rawLabel3 = base.incident_type_tertiary?.label || rawType3;
+  const codeHierarchy3 = rawLabel3 ? (resolveIncidentTypeCode(rawLabel3) || resolveIncidentTypeCode(rawType3) || rawType3) : '';
+
   const incidentTypes = [
     codeHierarchy1 && { type: codeHierarchy1 },
     codeHierarchy2 && { type: codeHierarchy2 },
+    codeHierarchy3 && { type: codeHierarchy3 },
   ].filter(Boolean);
 
   const primaryCode = codeHierarchy1 || '';

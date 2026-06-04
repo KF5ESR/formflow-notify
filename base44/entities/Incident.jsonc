@@ -71,6 +71,10 @@
       "type": "string",
       "title": "Type Response (Secondary)"
     },
+    "type_response_3": {
+      "type": "string",
+      "title": "Type Response (Tertiary)"
+    },
     "property_type": {
       "type": "string",
       "title": "Property Type"
