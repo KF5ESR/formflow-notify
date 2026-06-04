@@ -203,7 +203,7 @@ export const DEFAULT_FIRE_MODULES = {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function FireModulesSection({ value, onChange }) {
+export default function FireModulesSection({ value, onChange, isStructureFire = true }) {
   const m = value || DEFAULT_FIRE_MODULES;
   const fd = m.fire_detail || DEFAULT_FIRE_MODULES.fire_detail;
   const ld = fd.location_detail || DEFAULT_FIRE_MODULES.fire_detail.location_detail;
@@ -219,8 +219,8 @@ export default function FireModulesSection({ value, onChange }) {
   return (
     <div className="space-y-5">
 
-      {/* ── fire_detail ─────────────────────────────────────── */}
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+      {/* ── fire_detail (structure fires only) ─────────────── */}
+      {isStructureFire && <div className="rounded-lg border border-red-200 bg-red-50 p-4">
         <div className="flex items-center gap-2 mb-3">
           <Flame className="w-4 h-4 text-red-600" />
           <span className="text-sm font-semibold text-red-800">
@@ -291,7 +291,7 @@ export default function FireModulesSection({ value, onChange }) {
             </Row>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ── Risk Reduction (smoke_alarm, fire_alarm, other_alarm, fire_suppression) ── */}
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">

@@ -215,11 +215,10 @@ export default function IncidentForm() {
   const clearBeforeDispatch = calcTimes.duration !== null && calcTimes.duration < 0;
   const hasTimeConflict = clearBeforeScene || clearBeforeDispatch;
 
-  // Detect structure fire
-  const isFireStructure = useMemo(() => {
-    const code = TYPE_RESPONSE_MAP[form.type_response]?.code || "";
-    return code.startsWith("FIRE||STRUCTURE_FIRE");
-  }, [form.type_response]);
+  // Detect fire incident types (for NERIS Completion Questions)
+  const primaryCode = useMemo(() => TYPE_RESPONSE_MAP[form.type_response]?.code || "", [form.type_response]);
+  const isFireStructure = primaryCode.startsWith("FIRE||STRUCTURE_FIRE");
+  const isFireAny = primaryCode.startsWith("FIRE||");
 
   // All validation issues
   const validationIssues = useMemo(() => {
@@ -274,7 +273,7 @@ export default function IncidentForm() {
       incident_commander: form.incident_commander || icFromResponders,
       units_json: JSON.stringify(units),
       responders_json: JSON.stringify(responders),
-      fire_modules_json: isFireStructure ? JSON.stringify(fireModules) : null,
+      fire_modules_json: isFireAny ? JSON.stringify(fireModules) : null,
     };
     ["value_dollar","loss_dollar","value_crop","value_vehicle","total_amount","patients_injured","fatalities"].forEach((k) => {
       payload[k] = payload[k] !== "" ? Number(payload[k]) : null;
@@ -467,10 +466,10 @@ export default function IncidentForm() {
             </Field>
           </Section>
 
-          {/* Fire Modules (structure fire only) */}
-          {isFireStructure && (
-            <Section title="Fire Modules" badge="Required for Structure Fire" fullGrid>
-              <FireModulesSection value={fireModules} onChange={setFireModules} />
+          {/* NERIS Completion Questions (fire incidents only) */}
+          {isFireAny && (
+            <Section title="NERIS Completion Questions" badge={isFireStructure ? "Required for Structure Fire" : "Fire Incident"} fullGrid>
+              <FireModulesSection value={fireModules} onChange={setFireModules} isStructureFire={isFireStructure} />
             </Section>
           )}
 
