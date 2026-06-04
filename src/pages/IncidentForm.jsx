@@ -16,6 +16,7 @@ import NarrativeGuided, { buildNarrative } from "@/components/NarrativeGuided";
 import { buildNerisPayload, TYPE_RESPONSE_MAP } from "@/utils/nerisPayload";
 import NerisPanel from "@/components/NerisPanel";
 import { generateIncidentPDF } from "@/utils/incidentPDF";
+import { generateIncidentCSV } from "@/utils/incidentCSV";
 
 const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
@@ -231,10 +232,21 @@ export default function IncidentForm() {
     URL.revokeObjectURL(url);
   };
 
-  // Print to PDF
-  const handlePrint = () => {
+  // Export incident
+  const handleExportPDF = () => {
     const doc = generateIncidentPDF(form, units, responders, department);
     doc.save(`incident_${form.nfirs_id || "draft"}_${form.date || "nodate"}.pdf`);
+  };
+
+  const handleExportCSV = () => {
+    const csv = generateIncidentCSV(form, units, responders, department);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `incident_${form.nfirs_id || "draft"}_${form.date || "nodate"}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const save = useMutation({
@@ -286,9 +298,14 @@ export default function IncidentForm() {
               </p>
             </div>
           </div>
-          <Button type="button" variant="outline" onClick={handlePrint} className="shrink-0 text-slate-600 border-slate-300">
-            <Printer className="w-4 h-4 mr-2" /> Print (PDF)
-          </Button>
+          <div className="flex gap-2 items-center">
+            <Button type="button" variant="outline" onClick={handleExportPDF} className="shrink-0 text-slate-600 border-slate-300">
+              <Printer className="w-4 h-4 mr-2" /> Export PDF
+            </Button>
+            <Button type="button" variant="outline" onClick={handleExportCSV} className="shrink-0 text-slate-600 border-slate-300">
+              <Download className="w-4 h-4 mr-2" /> Export CSV
+            </Button>
+          </div>
           {isAdmin && (
             <Button type="button" variant="outline" onClick={handleExport} className="shrink-0 text-slate-600 border-slate-300">
               <Download className="w-4 h-4 mr-2" /> Export Payload
