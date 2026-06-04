@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     // Make the request server-side — no CORS issues
     const resp = await fetch(proxyUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestPayload),
       redirect: 'follow',
     });
