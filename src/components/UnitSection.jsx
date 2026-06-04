@@ -3,14 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Truck, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Truck } from "lucide-react";
 
 export const UNIT_TYPES = ["POV", "Engine", "Brush", "Tanker", "Rescue", "Other"];
 
 const EMPTY_UNIT = {
   unit_id: "",
   unit_type: "POV",
-  staffing: "",
   dispatch_time: "",
   enroute_time: "",
   on_scene_time: "",
@@ -97,24 +96,10 @@ function UnitRow({ unit, index, onChange, onRemove, globalDispatch, autoStaffing
           </Select>
         </div>
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <Label className="text-xs text-slate-600">Override Staffing</Label>
-            {autoStaffing > 0 && (
-              <span className="text-xs text-green-600 font-medium">Auto: {autoStaffing} from responders</span>
-            )}
+          <Label className="text-xs text-slate-600 mb-1 block">Staffing</Label>
+          <div className={`h-8 flex items-center px-3 rounded-md border text-sm font-medium ${autoStaffing > 0 ? "bg-green-50 border-green-200 text-green-700" : "bg-slate-100 border-slate-200 text-slate-400"}`}>
+            {autoStaffing > 0 ? `${autoStaffing} assigned` : "No responders"}
           </div>
-          <Input
-            type="number" min="0"
-            value={unit.staffing}
-            onChange={(e) => handleField("staffing", e.target.value)}
-            placeholder={autoStaffing > 0 ? String(autoStaffing) : ""}
-            className="h-8 text-sm"
-          />
-          {unit.staffing !== "" && autoStaffing > 0 && Number(unit.staffing) !== autoStaffing && (
-            <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
-              <AlertTriangle className="w-3 h-3" /> Override ({unit.staffing}) ≠ assigned responders ({autoStaffing})
-            </div>
-          )}
         </div>
         <div>
           <Label className="text-xs text-slate-600 mb-1 block">Dispatch</Label>
