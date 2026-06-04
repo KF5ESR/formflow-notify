@@ -4,9 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, User } from "lucide-react";
 
 const ROLES = ["IC", "Primary", "Assist", "Driver", "Observer"];
-const RESPONSE_TYPES = ["POV", "Station/Apparatus", "Mutual Aid"];
+const RESPONSE_TYPES = ["Emergent", "Non Emergent"];
 
-const EMPTY_RESPONDER = { name: "", role: "Primary", response_type: "POV", assigned_unit: "POV" };
+const EMPTY_RESPONDER = { name: "", role: "Primary", response_type: "Emergent", assigned_unit: "POV" };
 
 function ResponderRow({ responder, index, onChange, onRemove, unitOptions, members = [] }) {
   const set = (key, val) => onChange(index, { ...responder, [key]: val });
@@ -48,20 +48,12 @@ function ResponderRow({ responder, index, onChange, onRemove, unitOptions, membe
         </Select>
       </div>
 
-      {/* Assigned Unit — free text with suggestions from apparatus + existing units */}
+      {/* Assigned Unit — dropdown from apparatus */}
       <div className="w-36">
-        <Input
-          value={responder.assigned_unit || ""}
-          onChange={(e) => set("assigned_unit", e.target.value)}
-          placeholder="e.g. POV, Eng-1"
-          className="h-8 text-sm"
-          list={`unit-options-${index}`}
-        />
-        {unitOptions.length > 0 && (
-          <datalist id={`unit-options-${index}`}>
-            {unitOptions.map((u) => <option key={u} value={u} />)}
-          </datalist>
-        )}
+        <Select value={responder.assigned_unit} onValueChange={(v) => set("assigned_unit", v)}>
+          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>{unitOptions.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
 
       <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(index)} className="w-7 h-7 text-slate-400 hover:text-red-500 shrink-0">
