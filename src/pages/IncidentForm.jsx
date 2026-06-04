@@ -208,7 +208,7 @@ export default function IncidentForm() {
     mutationFn: (data) => isEdit ? base44.entities.Incident.update(id, data) : base44.entities.Incident.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
-      navigate("/");
+      if (!isEdit) navigate("/");
     },
   });
 
