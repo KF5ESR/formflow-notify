@@ -17,6 +17,7 @@ import { buildNerisPayload, TYPE_RESPONSE_MAP } from "@/utils/nerisPayload";
 import NerisPanel from "@/components/NerisPanel";
 import { generateIncidentPDF } from "@/utils/incidentPDF";
 import { generateIncidentCSV } from "@/utils/incidentCSV";
+import FireModulesSection, { DEFAULT_FIRE_MODULES } from "@/components/FireModulesSection";
 
 const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
@@ -128,6 +129,7 @@ export default function IncidentForm() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [unitTimes, setUnitTimes] = useState({});
   const [responders, setResponders] = useState([]);
+  const [fireModules, setFireModules] = useState(DEFAULT_FIRE_MODULES);
 
   // Derive units array from responders + unitTimes (for NERIS payload + save)
   const units = useMemo(() => {
@@ -167,6 +169,8 @@ export default function IncidentForm() {
      setForm(merged);
      // Load responders
      try { setResponders(JSON.parse(existing.responders_json || "[]")); } catch (_) { setResponders([]); }
+     // Load fire modules
+     try { setFireModules(JSON.parse(existing.fire_modules_json || "null") || DEFAULT_FIRE_MODULES); } catch (_) { setFireModules(DEFAULT_FIRE_MODULES); }
      // Rebuild unitTimes from saved units array
      try {
        const savedUnits = JSON.parse(existing.units_json || "[]");
@@ -210,6 +214,12 @@ export default function IncidentForm() {
   const clearBeforeScene = calcTimes.scene !== null && calcTimes.scene < 0;
   const clearBeforeDispatch = calcTimes.duration !== null && calcTimes.duration < 0;
   const hasTimeConflict = clearBeforeScene || clearBeforeDispatch;
+
+  // Detect structure fire
+  const isFireStructure = useMemo(() => {
+    const code = TYPE_RESPONSE_MAP[form.type_response]?.code || "";
+    return code.startsWith("FIRE||STRUCTURE_FIRE");
+  }, [form.type_response]);
 
   // All validation issues
   const validationIssues = useMemo(() => {
@@ -264,6 +274,7 @@ export default function IncidentForm() {
       incident_commander: form.incident_commander || icFromResponders,
       units_json: JSON.stringify(units),
       responders_json: JSON.stringify(responders),
+      fire_modules_json: isFireStructure ? JSON.stringify(fireModules) : null,
     };
     ["value_dollar","loss_dollar","value_crop","value_vehicle","total_amount","patients_injured","fatalities"].forEach((k) => {
       payload[k] = payload[k] !== "" ? Number(payload[k]) : null;
@@ -455,6 +466,13 @@ export default function IncidentForm() {
               </Select>
             </Field>
           </Section>
+
+          {/* Fire Modules (structure fire only) */}
+          {isFireStructure && (
+            <Section title="Fire Modules" badge="Required for Structure Fire" fullGrid>
+              <FireModulesSection value={fireModules} onChange={setFireModules} />
+            </Section>
+          )}
 
           {/* Unit Response */}
           <Section

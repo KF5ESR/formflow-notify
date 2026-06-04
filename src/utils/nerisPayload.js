@@ -159,6 +159,9 @@ export function buildNerisPayload(form, units, responders) {
     // Apparatus & personnel arrays
     apparatus: nerisApparatus,
     personnel: nerisPersonnel,
+    // Fire modules (structure fire only — parsed from JSON)
+    fire_modules: (() => { try { return form.fire_modules_json ? JSON.parse(form.fire_modules_json) : null; } catch(_) { return null; } })(),
+
     // Raw guided narrative (human-authored, pre-merge)
     narrative_raw: {
       reported:    form.narrative_reported || "",

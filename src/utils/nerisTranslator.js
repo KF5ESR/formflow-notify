@@ -366,6 +366,35 @@ export function translateToNeris(faJson, config = {}) {
     return canonicalizeUnitTimes(raw);
   }).filter(u => u.reported_unit_id || u.unit_neris_id);
 
+  // ── Fire suppression/alarm modules (required for FIRE||STRUCTURE_FIRE incidents) ────
+  const fireModules = faJson.fire_modules || null;
+  const isStructureFire = primaryCode.startsWith('FIRE||STRUCTURE_FIRE');
+
+  const buildFireModules = (m) => {
+    if (!m) return null;
+    return {
+      smoke_alarm: {
+        present: !!m.smoke_alarm?.present,
+        alerted_occupants: !!m.smoke_alarm?.alerted_occupants,
+        effectiveness: m.smoke_alarm?.effectiveness || 'UNDETERMINED',
+      },
+      fire_alarm: {
+        present: !!m.fire_alarm?.present,
+        operated: !!m.fire_alarm?.operated,
+        effectiveness: m.fire_alarm?.effectiveness || 'UNDETERMINED',
+      },
+      other_alarm: {
+        present: !!m.other_alarm?.present,
+        alerted_occupants: !!m.other_alarm?.alerted_occupants,
+      },
+      fire_suppression: {
+        present: !!m.fire_suppression?.present,
+        operated: !!m.fire_suppression?.operated,
+        effectiveness: m.fire_suppression?.effectiveness || 'UNDETERMINED',
+      },
+    };
+  };
+
   // ── NERIS API Payload (final shape — NERIS schema-safe fields only) ────────
   const incidentNumber = meta.nfirs_id || dispatch.incident_number || '';
   const payload = {
@@ -408,6 +437,17 @@ export function translateToNeris(faJson, config = {}) {
 
     // Incident types array (canonical hierarchy objects)
     incident_types: incidentTypes,
+
+    // Fire modules — required when incident type is FIRE||STRUCTURE_FIRE
+    ...(isStructureFire && fireModules ? { fire_modules: buildFireModules(fireModules) } : {}),
+    ...(isStructureFire && !fireModules ? {
+      fire_modules: buildFireModules(null) || {
+        smoke_alarm: { present: false, alerted_occupants: false, effectiveness: 'UNDETERMINED' },
+        fire_alarm: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
+        other_alarm: { present: false, alerted_occupants: false },
+        fire_suppression: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
+      }
+    } : {}),
   };
 
   // Strip undefined keys at top level

@@ -151,6 +151,10 @@
       "type": "string",
       "title": "Responders (JSON)"
     },
+    "fire_modules_json": {
+      "type": "string",
+      "title": "Fire Modules (JSON)"
+    },
     "narrative_reported": {
       "type": "string",
       "title": "What was reported?"
