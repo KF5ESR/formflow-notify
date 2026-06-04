@@ -110,11 +110,7 @@ const SUPPRESSION_APPLIANCES = [
   ["NONE", "None"],
 ];
 
-const EFFECTIVENESS = [
-  ["EFFECTIVE", "Effective"],
-  ["INEFFECTIVE", "Ineffective"],
-  ["UNDETERMINED", "Undetermined"],
-];
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,6 +146,12 @@ const YesNo = ({ value, onChange }) => (
     </SelectContent>
   </Select>
 );
+
+const RR_PRESENCE_OPTIONS = [
+  ["PRESENT", "Present"],
+  ["NOT_PRESENT", "Not Present"],
+  ["NOT_APPLICABLE", "Not Applicable"],
+];
 
 // Multi-select checkboxes for array fields
 const MultiCheck = ({ value = [], onChange, options }) => {
@@ -192,10 +194,11 @@ export const DEFAULT_FIRE_MODULES = {
     investigation_needed: "",
     investigation_types: [],
   },
-  smoke_alarm: { present: false, alerted_occupants: false, effectiveness: "UNDETERMINED" },
-  fire_alarm:  { present: false, operated: false, effectiveness: "UNDETERMINED" },
-  other_alarm: { present: false, alerted_occupants: false },
-  fire_suppression: { present: false, operated: false, effectiveness: "UNDETERMINED" },
+  // Risk reduction: presence is the NERIS field name (PRESENT | NOT_PRESENT | NOT_APPLICABLE)
+  smoke_alarm:     { presence: "NOT_PRESENT" },
+  fire_alarm:      { presence: "NOT_PRESENT" },
+  other_alarm:     { presence: "NOT_PRESENT" },
+  fire_suppression:{ presence: "NOT_PRESENT" },
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -294,37 +297,32 @@ export default function FireModulesSection({ value, onChange }) {
         <div className="flex items-center gap-2 mb-3">
           <Flame className="w-4 h-4 text-amber-600" />
           <span className="text-sm font-semibold text-amber-800">
-            Risk Reduction <span className="text-amber-600 font-normal">(top-level — required for STRUCTURE_FIRE)</span>
+            Risk Reduction <span className="text-amber-600 font-normal">(required for STRUCTURE_FIRE — each only needs "presence")</span>
           </span>
         </div>
         <div className="bg-white rounded-md border border-amber-100 px-4 py-1">
           {/* smoke_alarm */}
           <Row label="Smoke Alarm">
-            <Field label="Present"><YesNo value={m.smoke_alarm?.present} onChange={(v) => setRr("smoke_alarm", "present", v)} /></Field>
-            <Field label="Alerted Occupants"><YesNo value={m.smoke_alarm?.alerted_occupants} onChange={(v) => setRr("smoke_alarm", "alerted_occupants", v)} /></Field>
-            <Field label="Effectiveness">
-              <EnumSelect value={m.smoke_alarm?.effectiveness} onChange={(v) => setRr("smoke_alarm", "effectiveness", v)} options={EFFECTIVENESS} />
+            <Field label="Presence">
+              <EnumSelect value={m.smoke_alarm?.presence} onChange={(v) => setRr("smoke_alarm", "presence", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
           {/* fire_alarm */}
           <Row label="Fire Alarm">
-            <Field label="Present"><YesNo value={m.fire_alarm?.present} onChange={(v) => setRr("fire_alarm", "present", v)} /></Field>
-            <Field label="Operated"><YesNo value={m.fire_alarm?.operated} onChange={(v) => setRr("fire_alarm", "operated", v)} /></Field>
-            <Field label="Effectiveness">
-              <EnumSelect value={m.fire_alarm?.effectiveness} onChange={(v) => setRr("fire_alarm", "effectiveness", v)} options={EFFECTIVENESS} />
+            <Field label="Presence">
+              <EnumSelect value={m.fire_alarm?.presence} onChange={(v) => setRr("fire_alarm", "presence", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
           {/* other_alarm */}
           <Row label="Other Alarm">
-            <Field label="Present"><YesNo value={m.other_alarm?.present} onChange={(v) => setRr("other_alarm", "present", v)} /></Field>
-            <Field label="Alerted Occupants"><YesNo value={m.other_alarm?.alerted_occupants} onChange={(v) => setRr("other_alarm", "alerted_occupants", v)} /></Field>
+            <Field label="Presence">
+              <EnumSelect value={m.other_alarm?.presence} onChange={(v) => setRr("other_alarm", "presence", v)} options={RR_PRESENCE_OPTIONS} />
+            </Field>
           </Row>
           {/* fire_suppression */}
           <Row label="Fire Suppression">
-            <Field label="Present"><YesNo value={m.fire_suppression?.present} onChange={(v) => setRr("fire_suppression", "present", v)} /></Field>
-            <Field label="Operated"><YesNo value={m.fire_suppression?.operated} onChange={(v) => setRr("fire_suppression", "operated", v)} /></Field>
-            <Field label="Effectiveness">
-              <EnumSelect value={m.fire_suppression?.effectiveness} onChange={(v) => setRr("fire_suppression", "effectiveness", v)} options={EFFECTIVENESS} />
+            <Field label="Presence">
+              <EnumSelect value={m.fire_suppression?.presence} onChange={(v) => setRr("fire_suppression", "presence", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
         </div>

@@ -378,65 +378,78 @@ export function translateToNeris(faJson, config = {}) {
   const fireModules = faJson.fire_modules || null;
   const isStructureFire = primaryCode.startsWith('FIRE||STRUCTURE_FIRE');
 
-  // Build fire_detail node
+  // Build fire_detail node.
+  //
+  // Required fields per NERIS 422 response:
+  //   location_detail: arrival_condition, damage_type, room_of_origin_type, cause
+  //   fire_detail: water_supply, investigation_needed, investigation_types
+  //
+  // These must always be present (not stripped as undefined) or the API returns 422 missing.
+  //
   const buildFireDetail = (m) => {
     const fd = m?.fire_detail || {};
     const ld = fd.location_detail || {};
-    const detail = {
+    return {
       location_detail: {
         type: ld.type || 'STRUCTURE',
-        arrival_condition: ld.arrival_condition || undefined,
+        arrival_condition: ld.arrival_condition || 'FIRE_OUT_UPON_ARRIVAL',
         progression_evident: ld.progression_evident === true,
-        damage_type: ld.damage_type || undefined,
+        damage_type: ld.damage_type || 'NO_DAMAGE',
         floor_of_origin: ld.floor_of_origin != null ? Number(ld.floor_of_origin) : 1,
-        room_of_origin_type: ld.room_of_origin_type || undefined,
-        cause: ld.cause || undefined,
+        room_of_origin_type: ld.room_of_origin_type || 'UNKNOWN',
+        cause: ld.cause || 'UNABLE_TO_BE_DETERMINED',
       },
-      water_supply: fd.water_supply || undefined,
-      suppression_appliances: Array.isArray(fd.suppression_appliances) && fd.suppression_appliances.length
-        ? fd.suppression_appliances : undefined,
-      investigation_needed: fd.investigation_needed || undefined,
-      investigation_types: Array.isArray(fd.investigation_types) && fd.investigation_types.length
-        ? fd.investigation_types : undefined,
+      water_supply: fd.water_supply || 'TANK_WATER',
+      ...(Array.isArray(fd.suppression_appliances) && fd.suppression_appliances.length
+        ? { suppression_appliances: fd.suppression_appliances } : {}),
+      investigation_needed: fd.investigation_needed || 'NOT_EVALUATED',
+      investigation_types: Array.isArray(fd.investigation_types) ? fd.investigation_types : [],
     };
-    // Strip undefined inside location_detail
-    Object.keys(detail.location_detail).forEach(k => {
-      if (detail.location_detail[k] === undefined) delete detail.location_detail[k];
-    });
-    // Strip undefined at detail level
-    Object.keys(detail).forEach(k => { if (detail[k] === undefined) delete detail[k]; });
-    return detail;
   };
 
-  // Build risk reduction nodes (top-level, separate from fire_detail)
+  // Build risk reduction nodes (top-level, separate from fire_detail).
+  //
+  // NERIS risk reduction schema (Release 1.0):
+  //   Each module has a single required field: `presence` (enum: PRESENT | NOT_PRESENT | NOT_APPLICABLE)
+  //   Additional fields (type, working, operation, etc.) are ONLY valid when presence = "PRESENT".
+  //   Sending `present`, `alerted_occupants`, `effectiveness`, `operated` causes extra_forbidden 422.
+  //
   const buildRiskReduction = (m) => {
-    const defaults = {
-      smoke_alarm: { present: false, alerted_occupants: false, effectiveness: 'UNDETERMINED' },
-      fire_alarm:  { present: false, operated: false, effectiveness: 'UNDETERMINED' },
-      other_alarm: { present: false, alerted_occupants: false },
-      fire_suppression: { present: false, operated: false, effectiveness: 'UNDETERMINED' },
+    const mkAlarm = (src, extraFields) => {
+      const presence = src?.presence || 'NOT_PRESENT';
+      const node = { presence };
+      // Only include optional sub-fields when present
+      if (presence === 'PRESENT' && extraFields) {
+        Object.assign(node, extraFields(src));
+      }
+      return node;
     };
-    if (!m) return defaults;
+
     return {
-      smoke_alarm: {
-        present: !!m.smoke_alarm?.present,
-        alerted_occupants: !!m.smoke_alarm?.alerted_occupants,
-        effectiveness: m.smoke_alarm?.effectiveness || 'UNDETERMINED',
-      },
-      fire_alarm: {
-        present: !!m.fire_alarm?.present,
-        operated: !!m.fire_alarm?.operated,
-        effectiveness: m.fire_alarm?.effectiveness || 'UNDETERMINED',
-      },
-      other_alarm: {
-        present: !!m.other_alarm?.present,
-        alerted_occupants: !!m.other_alarm?.alerted_occupants,
-      },
-      fire_suppression: {
-        present: !!m.fire_suppression?.present,
-        operated: !!m.fire_suppression?.operated,
-        effectiveness: m.fire_suppression?.effectiveness || 'UNDETERMINED',
-      },
+      smoke_alarm: mkAlarm(m?.smoke_alarm, (s) => {
+        const extra = {};
+        if (s.type?.length) extra.smoke_alarm_type = s.type;
+        if (s.working != null) extra.smoke_alarm_working = s.working;
+        if (s.operation) extra.smoke_alarm_operation = s.operation;
+        return extra;
+      }),
+      fire_alarm: mkAlarm(m?.fire_alarm, (s) => {
+        const extra = {};
+        if (s.type?.length) extra.fire_alarm_type = s.type;
+        if (s.operation) extra.fire_alarm_operation = s.operation;
+        return extra;
+      }),
+      other_alarm: mkAlarm(m?.other_alarm, (s) => {
+        const extra = {};
+        if (s.type?.length) extra.other_alarm_type = s.type;
+        return extra;
+      }),
+      fire_suppression: mkAlarm(m?.fire_suppression, (s) => {
+        const extra = {};
+        if (s.type?.length) extra.fire_suppression_type = s.type;
+        if (s.operation) extra.fire_suppression_operation = s.operation;
+        return extra;
+      }),
     };
   };
 
