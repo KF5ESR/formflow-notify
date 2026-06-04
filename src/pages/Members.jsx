@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useDepartment } from "@/lib/DepartmentContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,34 +8,29 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Plus, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const ROLES = ["Chief", "Captain", "Lieutenant", "Firefighter", "Paramedic", "Driver", "Other"];
 const STATUSES = ["Active", "Inactive", "On Leave"];
 
 export default function Members() {
   const navigate = useNavigate();
+  const { deptId } = useParams();
   const { user } = useAuth();
-  const { scopeFilter, departmentId } = useDepartment();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", badge_number: "", role: "Firefighter", status: "Active" });
 
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
-  const [selectedDeptId, setSelectedDeptId] = useState(departmentId || "");
-
-  const { data: departments = [] } = useQuery({
-    queryKey: ["departments"],
-    queryFn: () => base44.entities.Department.list(),
-  });
 
   const { data: members = [] } = useQuery({
-    queryKey: ["members", departmentId],
-    queryFn: () => base44.entities.Member.filter(scopeFilter()),
+    queryKey: ["members", deptId],
+    queryFn: () => base44.entities.Member.filter({ department_id: deptId }),
+    enabled: !!deptId,
   });
 
   const create = useMutation({
-    mutationFn: (data) => base44.entities.Member.create({ ...data, department_id: selectedDeptId || departmentId }),
+    mutationFn: (data) => base44.entities.Member.create({ ...data, department_id: deptId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       setForm({ name: "", email: "", phone: "", badge_number: "", role: "Firefighter", status: "Active" });
@@ -53,7 +47,7 @@ export default function Members() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/dept/${deptId}`)} className="rounded-full">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-2xl font-bold text-slate-900">Members</h1>
@@ -68,21 +62,6 @@ export default function Members() {
         {showForm && canManage && (
            <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-               <div>
-                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Department *</Label>
-                 <Select value={selectedDeptId} onValueChange={setSelectedDeptId}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Select department" />
-                   </SelectTrigger>
-                   <SelectContent>
-                     {departments.map((dept) => (
-                       <SelectItem key={dept.id} value={dept.id}>
-                         {dept.department_name}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
-               </div>
                <div>
                  <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Name *</Label>
                 <Input

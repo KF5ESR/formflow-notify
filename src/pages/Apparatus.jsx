@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useDepartment } from "@/lib/DepartmentContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,15 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Plus, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const UNIT_TYPES = ["Engine", "Truck", "Rescue", "Tanker", "Ambulance", "POV", "Other"];
 const STATUSES = ["Available", "In Service", "Out of Service"];
 
 export default function Apparatus() {
   const navigate = useNavigate();
+  const { deptId } = useParams();
   const { user } = useAuth();
-  const { scopeFilter, departmentId } = useDepartment();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ unit_id: "", unit_type: "Engine", description: "", status: "Available" });
@@ -25,12 +24,13 @@ export default function Apparatus() {
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
 
   const { data: apparatus = [] } = useQuery({
-    queryKey: ["apparatus", departmentId],
-    queryFn: () => base44.entities.Apparatus.filter(scopeFilter()),
+    queryKey: ["apparatus", deptId],
+    queryFn: () => base44.entities.Apparatus.filter({ department_id: deptId }),
+    enabled: !!deptId,
   });
 
   const create = useMutation({
-    mutationFn: (data) => base44.entities.Apparatus.create({ ...data, department_id: departmentId }),
+    mutationFn: (data) => base44.entities.Apparatus.create({ ...data, department_id: deptId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apparatus"] });
       setForm({ unit_id: "", unit_type: "Engine", description: "", status: "Available" });
@@ -47,7 +47,7 @@ export default function Apparatus() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/dept/${deptId}`)} className="rounded-full">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-2xl font-bold text-slate-900">Apparatus</h1>

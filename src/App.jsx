@@ -8,6 +8,8 @@ import { DepartmentProvider } from '@/lib/DepartmentContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 // Add page imports here
 import Home from './pages/Home';
+import DepartmentSelect from './pages/DepartmentSelect';
+import DepartmentDashboard from './pages/DepartmentDashboard';
 import IncidentForm from './pages/IncidentForm';
 import AdminDepartments from './pages/AdminDepartments';
 import AdminDepartmentConfig from './pages/AdminDepartmentConfig';
@@ -41,12 +43,14 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/select-dept" element={<DepartmentSelect />} />
+      <Route path="/dept/:deptId" element={<DepartmentDashboard />} />
+      <Route path="/dept/:deptId/members" element={<Members />} />
+      <Route path="/dept/:deptId/apparatus" element={<Apparatus />} />
       <Route path="/incident/new" element={<IncidentForm />} />
       <Route path="/incident/:id" element={<IncidentForm />} />
       <Route path="/admin/departments" element={<AdminDepartments />} />
       <Route path="/admin/departments/:id/config" element={<AdminDepartmentConfig />} />
-      <Route path="/members" element={<Members />} />
-      <Route path="/apparatus" element={<Apparatus />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

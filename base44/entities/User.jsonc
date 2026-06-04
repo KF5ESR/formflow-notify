@@ -2,21 +2,21 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "department_id": {
-      "type": "string",
-      "title": "Department ID"
-    },
     "role": {
       "type": "string",
       "enum": [
         "super_admin",
         "dept_admin",
         "reviewer",
-        "responder",
+        "user",
         "viewer"
       ],
-      "default": "responder",
+      "default": "user",
       "title": "Role"
+    },
+    "department_id": {
+      "type": "string",
+      "title": "Department ID"
     }
   }
 }
