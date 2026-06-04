@@ -57,8 +57,12 @@ const DIRECT_CODE_MAP = {
   // Fire - Structure
   'structure fire':                       'FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT_FIRE',
   'structural involvement':               'FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT_FIRE',
+  'structural involvement fire':          'FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT_FIRE',
   'room and contents':                    'FIRE||STRUCTURE_FIRE||ROOM_AND_CONTENTS_FIRE',
+  'room and contents fire':               'FIRE||STRUCTURE_FIRE||ROOM_AND_CONTENTS_FIRE',
   'room contents fire':                   'FIRE||STRUCTURE_FIRE||ROOM_AND_CONTENTS_FIRE',
+  'chimney fire':                         'FIRE||STRUCTURE_FIRE||CHIMNEY_FIRE',
+  'confined cooking appliance fire':      'FIRE||STRUCTURE_FIRE||CONFINED_COOKING_APPLIANCE_FIRE',
   // Fire - Outside
   'vegetation fire':                      'FIRE||OUTSIDE_FIRE||VEGETATION_GRASS_FIRE',
   'grass fire':                           'FIRE||OUTSIDE_FIRE||VEGETATION_GRASS_FIRE',
@@ -108,6 +112,11 @@ function simplify(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+/** Normalize Google Forms " > " separator to " - " to match TYPE_RESPONSE_MAP keys */
+function normalizeFormsSeparator(s) {
+  return String(s || '').replace(/ > /g, ' - ');
+}
+
 /**
  * Resolve a human label or FA type_response value to a canonical NERIS code hierarchy.
  * Priority:
@@ -123,23 +132,30 @@ export function resolveIncidentTypeCode(raw) {
   // 1. Already canonical
   if (/^[A-Z]+(\|\|[A-Z_]+)+$/.test(s)) return s;
 
-  // 2. Strip the "Description > Category > Leaf" chain separator, take deepest part
-  const chainSep = s.includes(' > ') ? ' > ' : s.includes(' | ') ? ' | ' : null;
-  let leaf = s;
+  // 2. Normalize Google Forms " > " separator → " - " and try TYPE_RESPONSE_MAP
+  const normalized = normalizeFormsSeparator(s);
+  // Inline import to avoid circular dependency — pull code from the map if it matches
+  // (TYPE_RESPONSE_MAP is defined in nerisPayload.js which imports this file,
+  //  so we cannot import it back. Instead, replicate the normalization pattern here
+  //  and rely on pattern matching below for the actual resolution.)
+
+  // 3. Strip the "Description > Category > Leaf" chain separator, take deepest part
+  const chainSep = normalized.includes(' - ') ? ' - ' : null;
+  let leaf = normalized;
   if (chainSep) {
-    const parts = s.split(chainSep).map(p => p.trim()).filter(Boolean);
+    const parts = normalized.split(chainSep).map(p => p.trim()).filter(Boolean);
     leaf = parts[parts.length - 1];
   }
 
-  // 3. Direct map on full input
-  const fullSimple = simplify(s);
+  // 4. Direct map on full normalized input
+  const fullSimple = simplify(normalized);
   if (DIRECT_CODE_MAP[fullSimple]) return DIRECT_CODE_MAP[fullSimple];
 
-  // 4. Direct map on leaf
+  // 5. Direct map on leaf
   const leafSimple = simplify(leaf);
   if (DIRECT_CODE_MAP[leafSimple]) return DIRECT_CODE_MAP[leafSimple];
 
-  // 5. Regex patterns (mirrors FANerisTools.gs patterns array)
+  // 6. Regex patterns (mirrors FANerisTools.gs patterns array)
   const patterns = [
     [/chest\s*pain/i,                           'MEDICAL||ILLNESS||CHEST_PAIN_NON_TRAUMA'],
     [/back\s*pain/i,                            'MEDICAL||ILLNESS||BACK_PAIN_NON_TRAUMA'],
@@ -174,7 +190,7 @@ export function resolveIncidentTypeCode(raw) {
     if (rx.test(leaf)) return code;
   }
 
-  // 6. Fallback: return empty (caller will handle)
+  // 7. Fallback: return empty (caller will handle)
   return '';
 }
 
