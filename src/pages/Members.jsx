@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+import { usePermissions } from "@/lib/permissions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Trash2, Plus, Pencil } from "lucide-react";
 import { useParams } from "react-router-dom";
 import DeptContextHeader from "@/components/DeptContextHeader";
 import MemberEditSheet from "@/components/MemberEditSheet";
+import PermissionDenied from "@/components/PermissionDenied";
 
 export const RANKS = ["Chief", "Captain", "Lieutenant", "Firefighter", "Paramedic", "Driver", "Other"];
 export const STATUSES = ["Active", "Inactive", "Retired", "Terminated", "Leave of Absence"];
@@ -42,12 +44,13 @@ const EMPTY_FORM = { name: "", email: "", phone: "", badge_number: "", rank: "Fi
 export default function Members() {
   const { deptId } = useParams();
   const { user } = useAuth();
+  const { canView, canManageMembers, canDelete, guard } = usePermissions();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingMember, setEditingMember] = useState(null);
 
-  const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
+  const canManage = canManageMembers();
 
   const { data: members = [] } = useQuery({
     queryKey: ["members", deptId],
@@ -56,7 +59,10 @@ export default function Members() {
   });
 
   const create = useMutation({
-    mutationFn: (data) => base44.entities.Member.create({ ...data, department_id: deptId }),
+    mutationFn: (data) => {
+      if (!guard(canManageMembers(), "You don't have permission to add members.")) throw new Error("Forbidden");
+      return base44.entities.Member.create({ ...data, department_id: deptId });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       setForm(EMPTY_FORM);
@@ -65,7 +71,10 @@ export default function Members() {
   });
 
   const update = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Member.update(id, data),
+    mutationFn: ({ id, data }) => {
+      if (!guard(canManageMembers(), "You don't have permission to edit members.")) throw new Error("Forbidden");
+      return base44.entities.Member.update(id, data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       setEditingMember(null);
@@ -73,14 +82,22 @@ export default function Members() {
   });
 
   const delete_ = useMutation({
-    mutationFn: (id) => base44.entities.Member.delete(id),
+    mutationFn: (id) => {
+      if (!guard(canDelete("members"), "You don't have permission to delete members.")) throw new Error("Forbidden");
+      return base44.entities.Member.delete(id);
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members"] }),
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <DeptContextHeader module="Members" />
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      {!canView("members") && (
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <PermissionDenied message="You don't have permission to view member records." />
+        </div>
+      )}
+      {canView("members") && <div className="max-w-5xl mx-auto px-4 py-8">
 
         {canManage && (
           <Button onClick={() => setShowForm(!showForm)} className="mb-6 bg-blue-600 hover:bg-blue-700">
@@ -191,7 +208,7 @@ export default function Members() {
         <p className="text-xs text-slate-400 mt-4">
           Tip: Use status changes instead of deleting members — history (runs, training, rosters) stays intact.
         </p>
-      </div>
+      </div>}
 
       {editingMember && (
         <MemberEditSheet

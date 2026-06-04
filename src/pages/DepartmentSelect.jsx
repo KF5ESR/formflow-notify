@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Building2, ArrowRight, Settings } from "lucide-react";
+import { usePermissions } from "@/lib/permissions";
+import PermissionDenied from "@/components/PermissionDenied";
 
 const STATUS_COLOR = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -16,6 +18,7 @@ const STATUS_COLOR = {
 
 export default function DepartmentSelect() {
   const navigate = useNavigate();
+  const { canSwitchDepartments } = usePermissions();
 
   const { data: departments = [], isLoading } = useQuery({
     queryKey: ["departments"],
@@ -24,7 +27,12 @@ export default function DepartmentSelect() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="max-w-2xl mx-auto px-4 py-12">
+      {!canSwitchDepartments() && (
+        <div className="max-w-2xl mx-auto px-4 py-16">
+          <PermissionDenied message="Only super admins can switch departments." />
+        </div>
+      )}
+      {canSwitchDepartments() && <div className="max-w-2xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="flex items-center justify-between mb-10">
           <div className="flex items-center gap-3">
@@ -88,7 +96,7 @@ export default function DepartmentSelect() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

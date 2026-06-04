@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useDepartment } from "@/lib/DepartmentContext";
+import { usePermissions } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,7 @@ export default function DepartmentDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isSuperAdmin } = useDepartment();
+  const { canCreate, canDelete, canManageDepartmentSettings, canSwitchDepartments, guard } = usePermissions();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [view, setView] = useState("list");
@@ -114,7 +116,7 @@ export default function DepartmentDashboard() {
     medical: incidents.filter((i) => (i.type_response || "").includes("Medical")).length,
   };
 
-  const canAdmin = ["super_admin", "admin", "dept_admin"].includes(user?.role);
+  const canAdmin = canManageDepartmentSettings() || isSuperAdmin;
 
   const MODULES = [
     { label: "Runs", icon: FileText, color: "bg-red-50 border-red-200 text-red-700", active: true, count: incidents.length },
@@ -142,11 +144,13 @@ export default function DepartmentDashboard() {
                 <Settings className="w-3.5 h-3.5 mr-1.5" /> Settings
               </Button>
             )}
-            <Link to={`/incident/new`}>
-              <Button className="bg-red-600 hover:bg-red-700 text-white shadow-sm">
-                <Plus className="w-4 h-4 mr-1" /> New Run
-              </Button>
-            </Link>
+            {canCreate("runs") && (
+              <Link to={`/incident/new`}>
+                <Button className="bg-red-600 hover:bg-red-700 text-white shadow-sm">
+                  <Plus className="w-4 h-4 mr-1" /> New Run
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -291,13 +295,18 @@ export default function DepartmentDashboard() {
                           <Edit2 className="w-4 h-4" />
                         </Button>
                       </Link>
+                      {canDelete("runs") && (
                       <Button
                         variant="ghost" size="icon"
                         className="w-8 h-8 text-slate-400 hover:text-red-600"
-                        onClick={() => window.confirm("Delete this run?") && deleteIncident.mutate(inc.id)}
+                        onClick={() => {
+                          if (!guard(canDelete("runs"))) return;
+                          window.confirm("Delete this run?") && deleteIncident.mutate(inc.id);
+                        }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
+                      )}
                     </div>
                   </div>
                 </div>
