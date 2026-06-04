@@ -16,6 +16,11 @@ export function DepartmentProvider({ children }) {
 
   const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin";
 
+  const [memberRecord, setMemberRecord] = useState(null);
+
+  // department_role comes from the Member record (app-level), not from Base44 user role
+  const departmentRole = memberRecord?.department_role || null;
+
   useEffect(() => {
     if (!currentUser) { setLoading(false); return; }
 
@@ -24,16 +29,22 @@ export function DepartmentProvider({ children }) {
       try {
         const deptId = currentUser.department_id;
         if (deptId) {
-          const [dept, configs] = await Promise.all([
+          const [dept, configs, members] = await Promise.all([
             base44.entities.Department.get(deptId),
             base44.entities.NerisConfig.filter({ department_id: deptId }),
+            base44.entities.Member.filter({ department_id: deptId }),
           ]);
           setDepartment(dept);
           setNerisConfig(configs[0] || null);
+          // Find this user's member record by email
+          const myMember = members.find(
+            (m) => m.email && currentUser.email && m.email.toLowerCase() === currentUser.email.toLowerCase()
+          );
+          setMemberRecord(myMember || null);
         } else if (isSuperAdmin) {
-          // Super admin — no scoping, load nothing automatically
           setDepartment(null);
           setNerisConfig(null);
+          setMemberRecord(null);
         }
       } catch (err) {
         console.error("Failed to load department:", err);
@@ -67,6 +78,7 @@ export function DepartmentProvider({ children }) {
     <DepartmentContext.Provider value={{
       department, nerisConfig, loading, isSuperAdmin,
       departmentId: currentUser?.department_id || null,
+      memberRecord, departmentRole,
       scopeFilter, refresh,
     }}>
       {children}

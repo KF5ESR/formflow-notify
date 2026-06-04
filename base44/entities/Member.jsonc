@@ -12,7 +12,7 @@
     },
     "email": {
       "type": "string",
-      "title": "Email"
+      "title": "Login Email (linked Base44 user)"
     },
     "phone": {
       "type": "string",
@@ -22,7 +22,7 @@
       "type": "string",
       "title": "Badge Number"
     },
-    "role": {
+    "rank": {
       "type": "string",
       "enum": [
         "Chief",
@@ -33,7 +33,18 @@
         "Driver",
         "Other"
       ],
-      "title": "Role"
+      "title": "Rank / Position"
+    },
+    "department_role": {
+      "type": "string",
+      "enum": [
+        "dept_admin",
+        "reviewer",
+        "user",
+        "viewer"
+      ],
+      "default": "user",
+      "title": "Department Role"
     },
     "status": {
       "type": "string",
