@@ -8,18 +8,27 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
+import { Trash2, Plus, Pencil } from "lucide-react";
 import { useParams } from "react-router-dom";
 import DeptContextHeader from "@/components/DeptContextHeader";
+import MemberEditSheet from "@/components/MemberEditSheet";
 
-const RANKS = ["Chief", "Captain", "Lieutenant", "Firefighter", "Paramedic", "Driver", "Other"];
-const STATUSES = ["Active", "Inactive", "On Leave"];
-const DEPT_ROLES = [
+export const RANKS = ["Chief", "Captain", "Lieutenant", "Firefighter", "Paramedic", "Driver", "Other"];
+export const STATUSES = ["Active", "Inactive", "Retired", "Terminated", "Leave of Absence"];
+export const DEPT_ROLES = [
   { value: "dept_admin", label: "Dept Admin" },
   { value: "reviewer",   label: "Reviewer" },
   { value: "user",       label: "User" },
   { value: "viewer",     label: "Viewer" },
 ];
+
+const STATUS_COLORS = {
+  "Active":           "bg-green-100 text-green-700",
+  "Inactive":         "bg-slate-100 text-slate-600",
+  "Retired":          "bg-blue-100 text-blue-700",
+  "Terminated":       "bg-red-100 text-red-700",
+  "Leave of Absence": "bg-amber-100 text-amber-700",
+};
 
 const ROLE_COLORS = {
   dept_admin: "bg-red-100 text-red-700",
@@ -36,9 +45,7 @@ export default function Members() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [editingId, setEditingId] = useState(null);
-  const [editRole, setEditRole] = useState("");
-  const [editStatus, setEditStatus] = useState("");
+  const [editingMember, setEditingMember] = useState(null);
 
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
 
@@ -57,29 +64,18 @@ export default function Members() {
     },
   });
 
-  const updateRole = useMutation({
-    mutationFn: ({ id, department_role }) => base44.entities.Member.update(id, { department_role }),
+  const update = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Member.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      setEditingId(null);
+      setEditingMember(null);
     },
-  });
-
-  const updateStatus = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Member.update(id, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members"] }),
   });
 
   const delete_ = useMutation({
     mutationFn: (id) => base44.entities.Member.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members"] }),
   });
-
-  const startEdit = (m) => {
-    setEditingId(m.id);
-    setEditRole(m.department_role || "user");
-    setEditStatus(m.status || "Active");
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -94,6 +90,7 @@ export default function Members() {
 
         {showForm && canManage && (
           <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+            <h3 className="font-semibold text-slate-800 mb-4">New Member</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Name *</Label>
@@ -101,7 +98,7 @@ export default function Members() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Login Email</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Matches their Base44 login email" />
+                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Matches their Base44 login" />
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Phone</Label>
@@ -115,34 +112,26 @@ export default function Members() {
                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Rank / Position</Label>
                 <Select value={form.rank} onValueChange={(val) => setForm({ ...form, rank: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {RANKS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{RANKS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Department Role</Label>
                 <Select value={form.department_role} onValueChange={(val) => setForm({ ...form, department_role: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {DEPT_ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{DEPT_ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Status</Label>
                 <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="flex gap-3">
-              <Button onClick={() => create.mutate(form)} disabled={!form.name || create.isPending} className="bg-blue-600 hover:bg-blue-700">
-                Save
-              </Button>
+              <Button onClick={() => create.mutate(form)} disabled={!form.name || create.isPending} className="bg-blue-600 hover:bg-blue-700">Save</Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
             </div>
           </div>
@@ -163,57 +152,28 @@ export default function Members() {
             </TableHeader>
             <TableBody>
               {members.map((m) => (
-                <TableRow key={m.id} className="hover:bg-slate-50">
+                <TableRow key={m.id} className={`hover:bg-slate-50 ${m.status !== "Active" ? "opacity-60" : ""}`}>
                   <TableCell className="font-medium text-slate-900">{m.name}</TableCell>
                   <TableCell className="text-slate-500 text-sm">{m.email || "—"}</TableCell>
                   <TableCell className="text-slate-600">{m.badge_number || "—"}</TableCell>
-                  <TableCell className="text-slate-600">{m.rank || m.role || "—"}</TableCell>
+                  <TableCell className="text-slate-600">{m.rank || "—"}</TableCell>
                   <TableCell>
-                    {canManage && editingId === m.id ? (
-                      <div className="flex items-center gap-1">
-                        <Select value={editRole} onValueChange={setEditRole}>
-                          <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {DEPT_ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={() => updateRole.mutate({ id: m.id, department_role: editRole })}>
-                          <Check className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400" onClick={() => setEditingId(null)}>
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <Badge className={`text-xs font-medium border-0 ${ROLE_COLORS[m.department_role] || ROLE_COLORS.viewer}`}>
-                          {DEPT_ROLES.find(r => r.value === m.department_role)?.label || m.department_role || "user"}
-                        </Badge>
-                        {canManage && (
-                          <button onClick={() => startEdit(m)} className="text-slate-300 hover:text-slate-500 transition-colors">
-                            <Pencil className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <Badge className={`text-xs font-medium border-0 ${ROLE_COLORS[m.department_role] || ROLE_COLORS.viewer}`}>
+                      {DEPT_ROLES.find(r => r.value === m.department_role)?.label || m.department_role || "user"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className={`text-xs px-2 py-1 rounded-full ${m.status === "Active" ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-700"}`}>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[m.status] || STATUS_COLORS["Inactive"]}`}>
                       {m.status}
                     </span>
                   </TableCell>
                   {canManage && (
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={`text-xs h-7 px-2 ${m.status === "Active" ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
-                          onClick={() => updateStatus.mutate({ id: m.id, status: m.status === "Active" ? "Inactive" : "Active" })}
-                        >
-                          {m.status === "Active" ? "Deactivate" : "Activate"}
+                        <Button variant="ghost" size="icon" onClick={() => setEditingMember(m)} className="w-8 h-8 text-slate-500 hover:text-slate-700">
+                          <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => delete_.mutate(m.id)} className="text-red-500 hover:text-red-700 w-8 h-8">
+                        <Button variant="ghost" size="icon" onClick={() => delete_.mutate(m.id)} className="text-red-400 hover:text-red-600 w-8 h-8">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -229,9 +189,18 @@ export default function Members() {
         </div>
 
         <p className="text-xs text-slate-400 mt-4">
-          <strong>Note:</strong> The Login Email must match the member's Base44 login. Department Role controls what they can do inside this department — it is separate from the Base44 app-level role.
+          Tip: Use status changes instead of deleting members — history (runs, training, rosters) stays intact.
         </p>
       </div>
+
+      {editingMember && (
+        <MemberEditSheet
+          member={editingMember}
+          onSave={(data) => update.mutate({ id: editingMember.id, data })}
+          onClose={() => setEditingMember(null)}
+          isSaving={update.isPending}
+        />
+      )}
     </div>
   );
 }
