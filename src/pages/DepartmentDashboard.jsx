@@ -79,6 +79,18 @@ export default function DepartmentDashboard() {
     enabled: !!deptId,
   });
 
+  const { data: members = [] } = useQuery({
+    queryKey: ["members", deptId],
+    queryFn: () => base44.entities.Member.filter({ department_id: deptId }),
+    enabled: !!deptId,
+  });
+
+  const { data: apparatus = [] } = useQuery({
+    queryKey: ["apparatus", deptId],
+    queryFn: () => base44.entities.Apparatus.filter({ department_id: deptId }),
+    enabled: !!deptId,
+  });
+
   const deleteIncident = useMutation({
     mutationFn: (id) => base44.entities.Incident.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["incidents", deptId] }),
@@ -105,9 +117,9 @@ export default function DepartmentDashboard() {
   const canAdmin = ["super_admin", "admin", "dept_admin"].includes(user?.role);
 
   const MODULES = [
-    { label: "Runs", icon: FileText, color: "bg-red-50 border-red-200 text-red-700", active: true },
-    { label: "Members", icon: Users, color: "bg-blue-50 border-blue-200 text-blue-700", path: `/dept/${deptId}/members` },
-    { label: "Apparatus", icon: Truck, color: "bg-green-50 border-green-200 text-green-700", path: `/dept/${deptId}/apparatus` },
+    { label: "Runs", icon: FileText, color: "bg-red-50 border-red-200 text-red-700", active: true, count: incidents.length },
+    { label: "Members", icon: Users, color: "bg-blue-50 border-blue-200 text-blue-700", path: `/dept/${deptId}/members`, count: members.length },
+    { label: "Apparatus", icon: Truck, color: "bg-green-50 border-green-200 text-green-700", path: `/dept/${deptId}/apparatus`, count: apparatus.length },
     { label: "Training", icon: GraduationCap, color: "bg-purple-50 border-purple-200 text-purple-500", soon: true },
   ];
 
@@ -140,19 +152,22 @@ export default function DepartmentDashboard() {
 
         {/* Module Tiles */}
         <div className="grid grid-cols-4 gap-3 mb-6">
-          {MODULES.map(({ label, icon: Icon, color, path, active, soon }) => (
+          {MODULES.map(({ label, icon: Icon, color, path, active, soon, count }) => (
             <button
               key={label}
               onClick={() => path && navigate(path)}
               disabled={soon || active}
-              className={`flex flex-col items-center justify-center py-4 px-2 rounded-xl border-2 gap-2 transition-all
+              className={`flex flex-col items-center justify-center py-4 px-2 rounded-xl border-2 gap-1 transition-all
                 ${active ? `${color} ring-2 ring-offset-1 ring-red-400 cursor-default` :
                   soon ? `${color} opacity-40 cursor-not-allowed` :
                   `${color} hover:shadow-md cursor-pointer hover:scale-[1.02]`}`}
             >
               <Icon className="w-6 h-6" />
               <span className="text-sm font-semibold">{label}</span>
-              {soon && <span className="text-[10px] opacity-70 -mt-1">Coming soon</span>}
+              {count !== undefined && !soon && (
+                <span className="text-lg font-bold leading-none">{count}</span>
+              )}
+              {soon && <span className="text-[10px] opacity-70">Coming soon</span>}
             </button>
           ))}
         </div>
