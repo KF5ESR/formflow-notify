@@ -23,6 +23,7 @@ export default function NerisValidationStatusCard({ statusData }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.ERROR;
   const Icon = cfg.icon;
   const showDetails = status === "INVALID" || status === "ERROR";
+  const showResponseBody = showDetails;
 
   return (
     <div className={`rounded-lg border ${cfg.border} ${cfg.bg} overflow-hidden`}>

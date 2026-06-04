@@ -271,7 +271,27 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
 
       const httpOk = http_status >= 200 && http_status < 300;
       const asObj = (typeof response_body === "object" && response_body !== null) ? response_body : {};
-      const success = httpOk && asObj.success !== false && !asObj.error;
+
+      // NERIS /validate returns HTTP 200 for both valid AND invalid payloads.
+      // A valid payload has an empty or absent "detail" array.
+      // An invalid payload has a populated "detail" array with validation errors.
+      // We must inspect the body — not just the HTTP status — to determine true validity.
+      const nerisDetail = asObj.detail;
+      const hasValidationErrors = Array.isArray(nerisDetail) && nerisDetail.length > 0;
+      const success = httpOk && !hasValidationErrors && asObj.success !== false && !asObj.error;
+
+      // Build a human-readable error summary from NERIS detail array
+      let errorMessage = null;
+      if (!success) {
+        if (hasValidationErrors) {
+          errorMessage = nerisDetail.map(d => {
+            const loc = Array.isArray(d.loc) ? d.loc.join(" → ") : "";
+            return loc ? `[${loc}] ${d.msg}` : d.msg;
+          }).join(" | ");
+        } else {
+          errorMessage = asObj.error || asObj.message || `HTTP ${http_status}`;
+        }
+      }
 
       result = {
         success,
@@ -280,7 +300,7 @@ export default function NerisPanel({ form, incidentId, units, responders }) {
         environment: env,
         endpoint_used: `Apps Script proxy → NERIS /incident/${config.entity_id}/validate`,
         response_body,
-        error_message: success ? null : (asObj.error || `HTTP ${http_status}`),
+        error_message: errorMessage,
         request_body_snapshot: cleanBody,
         route: "apps_script_proxy",
         incident_id_source_used: asObj.incident_id_source_used || null,
