@@ -7,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Plus, ArrowLeft } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Trash2, Plus } from "lucide-react";
+import { useParams } from "react-router-dom";
+import DeptContextHeader from "@/components/DeptContextHeader";
 
 const ROLES = ["Chief", "Captain", "Lieutenant", "Firefighter", "Paramedic", "Driver", "Other"];
 const STATUSES = ["Active", "Inactive", "On Leave"];
 
 export default function Members() {
-  const navigate = useNavigate();
   const { deptId } = useParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -45,13 +45,8 @@ export default function Members() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <DeptContextHeader module="Members" />
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/dept/${deptId}`)} className="rounded-full">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Members</h1>
-        </div>
 
         {canManage && (
           <Button onClick={() => setShowForm(!showForm)} className="mb-6 bg-blue-600 hover:bg-blue-700">

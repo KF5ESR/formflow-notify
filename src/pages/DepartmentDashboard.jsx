@@ -3,6 +3,7 @@
  */
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+// ArrowLeft removed — handled by DeptContextHeader
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -11,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  ArrowLeft, Flame, Users, Truck, FileText, Plus, Search,
+  Flame, Users, Truck, FileText, Plus, Search,
   Edit2, Trash2, CheckCircle, Clock, AlertCircle, List,
   Table, GraduationCap, Settings,
 } from "lucide-react";
+import DeptContextHeader from "@/components/DeptContextHeader";
 
 const TYPE_COLORS = {
   "Fire": "bg-red-100 text-red-700",
@@ -113,35 +115,16 @@ export default function DepartmentDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <DeptContextHeader module="Runs" />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          {isSuperAdmin && (
-            <Button variant="ghost" size="icon" onClick={() => navigate("/select-dept")} className="rounded-full shrink-0">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          )}
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg shrink-0">
-              <Flame className="w-6 h-6 text-white" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-slate-900 truncate">{dept?.department_name || "Loading…"}</h1>
-                {dept?.short_name && (
-                  <span className="text-sm text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded hidden sm:inline">
-                    {dept.short_name}
-                  </span>
-                )}
-                {dept?.status && <Badge className={STATUS_COLOR[dept.status]}>{dept.status}</Badge>}
-                {dept?.neris_enabled && <Badge className="bg-blue-100 text-blue-700">NERIS</Badge>}
-                {dept?.production_enabled && <Badge className="bg-purple-100 text-purple-700">PROD</Badge>}
-              </div>
-              {dept?.county && <p className="text-xs text-slate-400 mt-0.5">{dept.county}, {dept.state}</p>}
-            </div>
+        {/* Top action bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            {dept?.neris_enabled && <Badge className="bg-blue-100 text-blue-700">NERIS</Badge>}
+            {dept?.production_enabled && <Badge className="bg-purple-100 text-purple-700">PROD</Badge>}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             {canAdmin && (
               <Button variant="outline" size="sm" onClick={() => navigate("/admin/departments")} className="hidden md:flex">
                 <Settings className="w-3.5 h-3.5 mr-1.5" /> Settings
