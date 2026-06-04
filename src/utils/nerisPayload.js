@@ -13,13 +13,13 @@
 export const TYPE_RESPONSE_MAP = {
   // Medical - Illness
   "Medical > Illness > Chest Pain (Non-Trauma)":          { code: "MEDICAL||ILLNESS||CHEST_PAIN_NON_TRAUMA",                          label: "Medical - Illness - Chest Pain (Non-Trauma)" },
-  "Medical > Illness > Allergic Reaction / Stings":       { code: "MEDICAL||ILLNESS||ALLERGIC_REACTION",                             label: "Medical - Illness - Allergic Reaction / Stings" },
+  "Medical > Illness > Allergic Reaction / Stings":       { code: "MEDICAL||ILLNESS||ALLERGIC_REACTION_STINGS",                        label: "Medical - Illness - Allergic Reaction / Stings" },
   "Medical > Illness > Nausea / Vomiting":                { code: "MEDICAL||ILLNESS||NAUSEA_VOMITING",                               label: "Medical - Illness - Nausea / Vomiting" },
   // Medical - Injury
   "Medical > Trauma > Fall":                              { code: "MEDICAL||INJURY||FALL",                                           label: "Medical - Injury/Trauma - Fall" },
   "Medical > Trauma > MVC Injury":                        { code: "MEDICAL||INJURY||MVC_INJURY",                                     label: "Medical - Injury/Trauma - MVC Injury" },
   // Fire - Structure
-  "Fire > Structure Fire > Structural Involvement":       { code: "FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT",                   label: "Fire - Structure Fire - Structural Involvement" },
+  "Fire > Structure Fire > Structural Involvement":       { code: "FIRE||STRUCTURE_FIRE||STRUCTURAL_INVOLVEMENT_FIRE",              label: "Fire - Structure Fire - Structural Involvement" },
   "Fire > Structure Fire > Room and Contents Fire":       { code: "FIRE||STRUCTURE_FIRE||ROOM_AND_CONTENTS_FIRE",                   label: "Fire - Structure Fire - Room and Contents" },
   // Fire - Outside
   "Fire > Outside Fire > Vegetation / Grass Fire":        { code: "FIRE||OUTSIDE_FIRE||VEGETATION_GRASS_FIRE",                      label: "Fire - Outside Fire - Vegetation/Grass" },
