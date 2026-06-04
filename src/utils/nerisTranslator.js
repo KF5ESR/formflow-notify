@@ -415,45 +415,21 @@ export function translateToNeris(faJson, config = {}) {
   //
   // Sub-fields (smoke_alarm_type, smoke_alarm_working, etc.) are only valid when presence = "PRESENT".
   //
+  // Build risk reduction modules as NERIS-schema objects.
+  // Each is: { presence: { type: "PRESENT" | "NOT_PRESENT" | "NOT_APPLICABLE" } }
+  // The presence.type discriminator is REQUIRED by the NERIS API.
   const buildRiskReduction = (m) => {
-    const smokePresence      = m?.smoke_alarm?.presence      || 'NOT_PRESENT';
-    const fireAlarmPresence  = m?.fire_alarm?.presence       || 'NOT_PRESENT';
-    const otherPresence      = m?.other_alarm?.presence      || 'NOT_PRESENT';
-    const suppressPresence   = m?.fire_suppression?.presence || 'NOT_PRESENT';
+    const smokeType    = m?.smoke_alarm?.presence?.type      || 'NOT_APPLICABLE';
+    const fireAlType   = m?.fire_alarm?.presence?.type       || 'NOT_APPLICABLE';
+    const otherType    = m?.other_alarm?.presence?.type      || 'NOT_APPLICABLE';
+    const suppressType = m?.fire_suppression?.presence?.type || 'NOT_APPLICABLE';
 
-    const out = {
-      smoke_alarm_presence:       smokePresence,
-      fire_alarm_presence:        fireAlarmPresence,
-      other_alarm_presence:       otherPresence,
-      fire_suppression_presence:  suppressPresence,
+    return {
+      smoke_alarm:      { presence: { type: smokeType } },
+      fire_alarm:       { presence: { type: fireAlType } },
+      other_alarm:      { presence: { type: otherType } },
+      fire_suppression: { presence: { type: suppressType } },
     };
-
-    // Include sub-fields only when presence = PRESENT
-    const sa = m?.smoke_alarm || {};
-    if (smokePresence === 'PRESENT') {
-      if (sa.type?.length)   out.smoke_alarm_type      = sa.type;
-      if (sa.working != null) out.smoke_alarm_working   = sa.working;
-      if (sa.operation)      out.smoke_alarm_operation  = sa.operation;
-    }
-
-    const fa = m?.fire_alarm || {};
-    if (fireAlarmPresence === 'PRESENT') {
-      if (fa.type?.length)  out.fire_alarm_type      = fa.type;
-      if (fa.operation)     out.fire_alarm_operation  = fa.operation;
-    }
-
-    const oa = m?.other_alarm || {};
-    if (otherPresence === 'PRESENT') {
-      if (oa.type?.length)  out.other_alarm_type = oa.type;
-    }
-
-    const fs = m?.fire_suppression || {};
-    if (suppressPresence === 'PRESENT') {
-      if (fs.type?.length)   out.fire_suppression_type      = fs.type;
-      if (fs.operation)      out.fire_suppression_operation  = fs.operation;
-    }
-
-    return out;
   };
 
   // ── NERIS API Payload (final shape — NERIS schema-safe fields only) ────────
@@ -500,7 +476,7 @@ export function translateToNeris(faJson, config = {}) {
     incident_types: incidentTypes,
 
     // fire_detail — required when at least one FIRE incident type is present.
-    // Risk reduction fields are flat top-level keys (smoke_alarm_presence etc.)
+    // Risk reduction: top-level objects with presence: { type: "..." } discriminator.
     ...(isStructureFire ? { fire_detail: buildFireDetail(fireModules) } : {}),
     ...(isStructureFire ? buildRiskReduction(fireModules) : {}),
   };

@@ -194,11 +194,11 @@ export const DEFAULT_FIRE_MODULES = {
     investigation_needed: "",
     investigation_types: [],
   },
-  // Risk reduction: presence is the NERIS field name (PRESENT | NOT_PRESENT | NOT_APPLICABLE)
-  smoke_alarm:     { presence: "NOT_PRESENT" },
-  fire_alarm:      { presence: "NOT_PRESENT" },
-  other_alarm:     { presence: "NOT_PRESENT" },
-  fire_suppression:{ presence: "NOT_PRESENT" },
+  // Risk reduction: presence is an object { type: "PRESENT" | "NOT_PRESENT" | "NOT_APPLICABLE" }
+  smoke_alarm:     { presence: { type: "NOT_APPLICABLE" } },
+  fire_alarm:      { presence: { type: "NOT_APPLICABLE" } },
+  other_alarm:     { presence: { type: "NOT_APPLICABLE" } },
+  fire_suppression:{ presence: { type: "NOT_APPLICABLE" } },
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -212,8 +212,9 @@ export default function FireModulesSection({ value, onChange }) {
     onChange({ ...m, fire_detail: { ...fd, location_detail: { ...ld, [key]: val } } });
   const setFd = (key, val) =>
     onChange({ ...m, fire_detail: { ...fd, [key]: val } });
-  const setRr = (module, key, val) =>
-    onChange({ ...m, [module]: { ...m[module], [key]: val } });
+  // presence must be { type: "..." } per NERIS schema discriminator
+  const setPresence = (module, typeVal) =>
+    onChange({ ...m, [module]: { ...m[module], presence: { type: typeVal } } });
 
   return (
     <div className="space-y-5">
@@ -304,25 +305,25 @@ export default function FireModulesSection({ value, onChange }) {
           {/* smoke_alarm */}
           <Row label="Smoke Alarm">
             <Field label="Presence">
-              <EnumSelect value={m.smoke_alarm?.presence} onChange={(v) => setRr("smoke_alarm", "presence", v)} options={RR_PRESENCE_OPTIONS} />
+              <EnumSelect value={m.smoke_alarm?.presence?.type} onChange={(v) => setPresence("smoke_alarm", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
           {/* fire_alarm */}
           <Row label="Fire Alarm">
             <Field label="Presence">
-              <EnumSelect value={m.fire_alarm?.presence} onChange={(v) => setRr("fire_alarm", "presence", v)} options={RR_PRESENCE_OPTIONS} />
+              <EnumSelect value={m.fire_alarm?.presence?.type} onChange={(v) => setPresence("fire_alarm", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
           {/* other_alarm */}
           <Row label="Other Alarm">
             <Field label="Presence">
-              <EnumSelect value={m.other_alarm?.presence} onChange={(v) => setRr("other_alarm", "presence", v)} options={RR_PRESENCE_OPTIONS} />
+              <EnumSelect value={m.other_alarm?.presence?.type} onChange={(v) => setPresence("other_alarm", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
           {/* fire_suppression */}
           <Row label="Fire Suppression">
             <Field label="Presence">
-              <EnumSelect value={m.fire_suppression?.presence} onChange={(v) => setRr("fire_suppression", "presence", v)} options={RR_PRESENCE_OPTIONS} />
+              <EnumSelect value={m.fire_suppression?.presence?.type} onChange={(v) => setPresence("fire_suppression", v)} options={RR_PRESENCE_OPTIONS} />
             </Field>
           </Row>
         </div>
