@@ -38,6 +38,7 @@ export default function Members() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [editRole, setEditRole] = useState("");
+  const [editStatus, setEditStatus] = useState("");
 
   const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
 
@@ -64,6 +65,11 @@ export default function Members() {
     },
   });
 
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.Member.update(id, { status }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members"] }),
+  });
+
   const delete_ = useMutation({
     mutationFn: (id) => base44.entities.Member.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["members"] }),
@@ -72,6 +78,7 @@ export default function Members() {
   const startEdit = (m) => {
     setEditingId(m.id);
     setEditRole(m.department_role || "user");
+    setEditStatus(m.status || "Active");
   };
 
   return (
@@ -197,9 +204,19 @@ export default function Members() {
                   </TableCell>
                   {canManage && (
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => delete_.mutate(m.id)} className="text-red-500 hover:text-red-700 w-8 h-8">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`text-xs h-7 px-2 ${m.status === "Active" ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}`}
+                          onClick={() => updateStatus.mutate({ id: m.id, status: m.status === "Active" ? "Inactive" : "Active" })}
+                        >
+                          {m.status === "Active" ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => delete_.mutate(m.id)} className="text-red-500 hover:text-red-700 w-8 h-8">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
