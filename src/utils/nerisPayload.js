@@ -177,8 +177,12 @@ function parseAddress(raw) {
 export function buildNerisPayload(form, units, responders) {
   const resolveType = (raw) => {
     if (!raw) return null;
+    // 1. Exact match (Base44 format: "Fire - Structure Fire - Structural Involvement")
     if (TYPE_RESPONSE_MAP[raw]) return TYPE_RESPONSE_MAP[raw];
-    // Fallback: attempt pattern-based resolution for freetext / legacy values
+    // 2. Google Forms format uses " > " separator — normalize and retry
+    const normalized = raw.replace(/ > /g, " - ");
+    if (TYPE_RESPONSE_MAP[normalized]) return TYPE_RESPONSE_MAP[normalized];
+    // 3. Pattern-based resolver for freetext / unrecognized values
     const resolved = resolveIncidentTypeCode(raw);
     return { code: resolved || "OTHER", label: raw };
   };
