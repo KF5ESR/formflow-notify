@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer, AlertTriangle, Download, Printer } from "lucide-react";
 import UnitSection from "@/components/UnitSection";
 import ResponderSection from "@/components/ResponderSection";
@@ -341,262 +342,282 @@ export default function IncidentForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-2">
+          <Tabs defaultValue="basics">
+            <TabsList className="flex flex-wrap h-auto gap-1 bg-slate-100 p-1 rounded-xl mb-4">
+              <TabsTrigger value="basics" className="rounded-lg text-sm">Basics</TabsTrigger>
+              <TabsTrigger value="response" className="rounded-lg text-sm">
+                Response
+                {!hasIC && <span className="ml-1.5 w-2 h-2 rounded-full bg-amber-400 inline-block" />}
+              </TabsTrigger>
+              <TabsTrigger value="details" className="rounded-lg text-sm">Details</TabsTrigger>
+              <TabsTrigger value="narrative" className="rounded-lg text-sm">Narrative</TabsTrigger>
+              {isFireAny && (
+                <TabsTrigger value="fire" className="rounded-lg text-sm text-red-700 font-semibold">
+                  🔥 Fire
+                  {isFireStructure && <span className="ml-1 text-xs text-red-500">(required)</span>}
+                </TabsTrigger>
+              )}
+              {isAdmin && <TabsTrigger value="neris" className="rounded-lg text-sm">NERIS</TabsTrigger>}
+            </TabsList>
 
-          {/* IDs */}
-          <Section title="Incident Identifiers" badge="IDs">
-            <Field label="NFIRS ID"><Input value={form.nfirs_id} onChange={set("nfirs_id")} placeholder="e.g. 2600001" /></Field>
-            <Field label="PSRID"><Input value={form.psrid} onChange={set("psrid")} placeholder="e.g. 2026-000076" /></Field>
-          </Section>
+            {/* ── BASICS ── */}
+            <TabsContent value="basics" className="space-y-2 mt-0">
+              <Section title="Incident Identifiers" badge="IDs">
+                <Field label="NFIRS ID"><Input value={form.nfirs_id} onChange={set("nfirs_id")} placeholder="e.g. 2600001" /></Field>
+                <Field label="PSRID"><Input value={form.psrid} onChange={set("psrid")} placeholder="e.g. 2026-000076" /></Field>
+              </Section>
 
-          {/* Times */}
-          <Section
-            title="Date & Times"
-            badge="Times"
-            warning={hasTimeConflict ? "Time conflict detected" : null}
-          >
-            <Field label="Date" required>
-              <Input type="date" value={form.date} onChange={set("date")} />
-            </Field>
-            <Field label="Conditions / Temp">
-              <Input value={form.conditions_temp} onChange={set("conditions_temp")} placeholder="e.g. Cool & Clear" />
-            </Field>
-            <Field label="DISPATCH_TIME">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                <Input type="time" value={form.dispatch_time} onChange={set("dispatch_time")} />
-              </div>
-            </Field>
-            <Field label="FIRST_ON_SCENE_TIME">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                <Input type="time" value={form.first_on_scene_time} onChange={set("first_on_scene_time")} />
-              </div>
-            </Field>
-            <Field label="CONTROL_TIME">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400 shrink-0" />
-                <Input type="time" value={form.control_time} onChange={set("control_time")} />
-              </div>
-            </Field>
-            <Field label="FD_CLEAR_TIME">
-              <div className="flex items-center gap-2">
-                <Clock className={`w-4 h-4 shrink-0 ${hasTimeConflict ? "text-red-400" : "text-slate-400"}`} />
-                <Input
-                  type="time"
-                  value={form.fd_clear_time}
-                  onChange={set("fd_clear_time")}
-                  className={hasTimeConflict ? "border-red-300 bg-red-50" : ""}
-                />
-              </div>
-            </Field>
-            {/* Calculated durations */}
-            {(calcTimes.response !== null || calcTimes.duration !== null || calcTimes.scene !== null) && (
-              <div className="md:col-span-2 flex flex-wrap gap-2 pt-1">
-                <CalcBadge label="Response" minutes={calcTimes.response} />
-                <CalcBadge label="Incident Duration" minutes={calcTimes.duration} />
-                <CalcBadge label="Scene Duration" minutes={calcTimes.scene} warn={clearBeforeScene} />
-              </div>
-            )}
-          </Section>
-
-          {/* Location */}
-          <Section title="Location & Contact">
-            <Field label="Incident Location" required full>
-              <Input value={form.incident_location} onChange={set("incident_location")} placeholder="Street address or intersection" />
-            </Field>
-            <Field label="Owner / Occupant / Patient">
-              <Input value={form.owner_occupant} onChange={set("owner_occupant")} placeholder="Name and address" />
-            </Field>
-            <Field label="Contact Number">
-              <Input value={form.contact_number} onChange={set("contact_number")} placeholder="Phone number" />
-            </Field>
-          </Section>
-
-          {/* Incident Details */}
-          <Section title="Incident Details">
-            <Field label="Nature of Call" required>
-              <Input value={form.nature_of_call} onChange={set("nature_of_call")} placeholder="e.g. Medical, Structure Fire, MVC" />
-            </Field>
-            <Field label="Investigation">
-              <Select value={form.investigation} onValueChange={set("investigation")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-              </Select>
-            </Field>
-            <Field label="Action Taken" required>
-              <Input value={form.action_taken} onChange={set("action_taken")} placeholder="e.g. Extinguish, Medical, Cancelled" />
-            </Field>
-            <Field label="Type Response (Primary)">
-              <Select value={form.type_response} onValueChange={set("type_response")}>
-                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
-                <SelectContent>{TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            {form.type_response && TYPE_RESPONSE_MAP[form.type_response] && (
-              <div className="md:col-span-2 flex items-center gap-2 -mt-2">
-                <span className="text-xs text-slate-400">NERIS code:</span>
-                <code className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
-                  {TYPE_RESPONSE_MAP[form.type_response].code}
-                </code>
-              </div>
-            )}
-            <Field label="Type Response (Secondary)">
-              <Select value={form.type_response_2} onValueChange={set("type_response_2")}>
-                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>None</SelectItem>
-                  {TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Type Response (Tertiary)">
-              <Select value={form.type_response_3} onValueChange={set("type_response_3")}>
-                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>None</SelectItem>
-                  {TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Property Type">
-              <Select value={form.property_type} onValueChange={set("property_type")}>
-                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                <SelectContent>{PROPERTY_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-          </Section>
-
-          {/* NERIS Completion Questions (fire incidents only) */}
-          {isFireAny && (
-            <Section title="NERIS Completion Questions" badge={isFireStructure ? "Required for Structure Fire" : "Fire Incident"} fullGrid>
-              <FireModulesSection value={fireModules} onChange={setFireModules} isStructureFire={isFireStructure} />
-            </Section>
-          )}
-
-          {/* Unit Response */}
-          <Section
-            title="Unit Response"
-            badge={units.length > 0 ? `${units.length} unit${units.length !== 1 ? "s" : ""}` : undefined}
-            fullGrid
-          >
-            <div className="mb-3">
-             <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Select FD</Label>
-             <Select value={form.select_fd} onValueChange={set("select_fd")}>
-               <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-               <SelectContent>{FD_OPTIONS_FILTERED.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-             </Select>
-            </div>
-            <UnitSection responders={responders} unitTimes={unitTimes} onUnitTimesChange={setUnitTimes} globalDispatch={form.dispatch_time} />
-          </Section>
-
-          {/* Responders */}
-          <Section
-            title="Responders"
-            badge={responders.length > 0 ? `${responders.length}` : undefined}
-            fullGrid
-            warning={!hasIC ? "No IC assigned" : null}
-          >
-            <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                  Incident Commander (IC)
-                  {!hasIC && <span className="ml-2 text-xs text-amber-600">⚠ Required</span>}
-                </Label>
-                <Input
-                  value={form.incident_commander}
-                  onChange={set("incident_commander")}
-                  placeholder={icFromResponders ? `Auto: ${icFromResponders}` : "Name or assign IC role below"}
-                  className={!hasIC ? "border-amber-300" : ""}
-                />
-                {icFromResponders && !form.incident_commander && (
-                  <p className="text-xs text-green-600 mt-1">Auto-detected from responders: {icFromResponders}</p>
+              <Section title="Date & Times" badge="Times" warning={hasTimeConflict ? "Time conflict detected" : null}>
+                <Field label="Date" required>
+                  <Input type="date" value={form.date} onChange={set("date")} />
+                </Field>
+                <Field label="Conditions / Temp">
+                  <Input value={form.conditions_temp} onChange={set("conditions_temp")} placeholder="e.g. Cool & Clear" />
+                </Field>
+                <Field label="DISPATCH_TIME">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                    <Input type="time" value={form.dispatch_time} onChange={set("dispatch_time")} />
+                  </div>
+                </Field>
+                <Field label="FIRST_ON_SCENE_TIME">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                    <Input type="time" value={form.first_on_scene_time} onChange={set("first_on_scene_time")} />
+                  </div>
+                </Field>
+                <Field label="CONTROL_TIME">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                    <Input type="time" value={form.control_time} onChange={set("control_time")} />
+                  </div>
+                </Field>
+                <Field label="FD_CLEAR_TIME">
+                  <div className="flex items-center gap-2">
+                    <Clock className={`w-4 h-4 shrink-0 ${hasTimeConflict ? "text-red-400" : "text-slate-400"}`} />
+                    <Input type="time" value={form.fd_clear_time} onChange={set("fd_clear_time")} className={hasTimeConflict ? "border-red-300 bg-red-50" : ""} />
+                  </div>
+                </Field>
+                {(calcTimes.response !== null || calcTimes.duration !== null || calcTimes.scene !== null) && (
+                  <div className="md:col-span-2 flex flex-wrap gap-2 pt-1">
+                    <CalcBadge label="Response" minutes={calcTimes.response} />
+                    <CalcBadge label="Incident Duration" minutes={calcTimes.duration} />
+                    <CalcBadge label="Scene Duration" minutes={calcTimes.scene} warn={clearBeforeScene} />
+                  </div>
                 )}
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Ambulance Service/Unit No.</Label>
-                <Input
-                  value={form.ambulance_unit || ""}
-                  onChange={(e) => setForm(f => ({ ...f, ambulance_unit: e.target.value }))}
-                  placeholder="e.g. Med-Tech / 8001"
-                />
-              </div>
-            </div>
-            <ResponderSection responders={responders} onChange={setResponders} apparatus={apparatus} members={members} />
-          </Section>
+              </Section>
 
-          {/* Mutual Aid */}
-          <Section title="Mutual Aid" defaultOpen={false}>
-            <Field label="Mutual Aid Given/Received">
-              <Select value={form.mutual_aid} onValueChange={set("mutual_aid")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{MUTUAL_AID_OPTIONS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-              </Select>
-            </Field>
-            <Field label="FDID Number Received">
-              <Input value={form.fdid_received} onChange={set("fdid_received")} placeholder="e.g. Oppelo, Sardis" />
-            </Field>
-            <Field label="Hydrant Number/Location">
-              <Input value={form.hydrant_location} onChange={set("hydrant_location")} />
-            </Field>
-          </Section>
+              <Section title="Location & Contact">
+                <Field label="Incident Location" required full>
+                  <Input value={form.incident_location} onChange={set("incident_location")} placeholder="Street address or intersection" />
+                </Field>
+                <Field label="Owner / Occupant / Patient">
+                  <Input value={form.owner_occupant} onChange={set("owner_occupant")} placeholder="Name and address" />
+                </Field>
+                <Field label="Contact Number">
+                  <Input value={form.contact_number} onChange={set("contact_number")} placeholder="Phone number" />
+                </Field>
+              </Section>
 
-          {/* Values */}
-          <Section title="Property / Loss Values" defaultOpen={false}>
-            <Field label="Property Value ($)"><Input type="number" value={form.value_dollar} onChange={set("value_dollar")} /></Field>
-            <Field label="Loss ($)"><Input type="number" value={form.loss_dollar} onChange={set("loss_dollar")} /></Field>
-            <Field label="Crop Value ($)"><Input type="number" value={form.value_crop} onChange={set("value_crop")} /></Field>
-            <Field label="Vehicle Value ($)"><Input type="number" value={form.value_vehicle} onChange={set("value_vehicle")} /></Field>
-            <Field label="Total Amount ($)"><Input type="number" value={form.total_amount} onChange={set("total_amount")} /></Field>
-            <Field label="Area"><Input value={form.area} onChange={set("area")} placeholder="e.g. 2 acres" /></Field>
-            <Field label="VIN / LIC"><Input value={form.vin_lic} onChange={set("vin_lic")} /></Field>
-            <Field label="Products Involved"><Input value={form.products} onChange={set("products")} /></Field>
-            <Field label="Patients Injured"><Input type="number" value={form.patients_injured} onChange={set("patients_injured")} /></Field>
-            <Field label="Fatalities"><Input type="number" value={form.fatalities} onChange={set("fatalities")} /></Field>
-          </Section>
+              <Section title="Incident Type & Actions">
+                <Field label="Nature of Call" required>
+                  <Input value={form.nature_of_call} onChange={set("nature_of_call")} placeholder="e.g. Medical, Structure Fire, MVC" />
+                </Field>
+                <Field label="Investigation">
+                  <Select value={form.investigation} onValueChange={set("investigation")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Action Taken" required>
+                  <Input value={form.action_taken} onChange={set("action_taken")} placeholder="e.g. Extinguish, Medical, Cancelled" />
+                </Field>
+                <Field label="Property Type">
+                  <Select value={form.property_type} onValueChange={set("property_type")}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>{PROPERTY_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Type Response (Primary)" full>
+                  <Select value={form.type_response} onValueChange={set("type_response")}>
+                    <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    <SelectContent>{TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                {form.type_response && TYPE_RESPONSE_MAP[form.type_response] && (
+                  <div className="md:col-span-2 flex items-center gap-2 -mt-2">
+                    <span className="text-xs text-slate-400">NERIS code:</span>
+                    <code className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
+                      {TYPE_RESPONSE_MAP[form.type_response].code}
+                    </code>
+                  </div>
+                )}
+                <Field label="Type Response (Secondary)">
+                  <Select value={form.type_response_2} onValueChange={set("type_response_2")}>
+                    <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>None</SelectItem>
+                      {TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Type Response (Tertiary)">
+                  <Select value={form.type_response_3} onValueChange={set("type_response_3")}>
+                    <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>None</SelectItem>
+                      {TYPE_RESPONSES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </Section>
+            </TabsContent>
 
-          {/* Narrative */}
-          <Section title="Narrative" fullGrid>
-            <NarrativeGuided fields={form} onChange={setNarr} />
-          </Section>
+            {/* ── RESPONSE ── */}
+            <TabsContent value="response" className="space-y-2 mt-0">
+              <Section
+                title="Unit Response"
+                badge={units.length > 0 ? `${units.length} unit${units.length !== 1 ? "s" : ""}` : undefined}
+                fullGrid
+              >
+                <div className="mb-3">
+                  <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Select FD</Label>
+                  <Select value={form.select_fd} onValueChange={set("select_fd")}>
+                    <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent>{FD_OPTIONS_FILTERED.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <UnitSection responders={responders} unitTimes={unitTimes} onUnitTimesChange={setUnitTimes} globalDispatch={form.dispatch_time} />
+              </Section>
 
-          {/* NERIS Data */}
-          <Section title="NERIS Data" badge="Admin Only">
-              <Field label="NERIS Environment">
-                <Select value={form.neris_env} onValueChange={set("neris_env")}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TEST">TEST</SelectItem>
-                    <SelectItem value="PROD">PROD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="NERIS Post Status">
-                <Input value={form.neris_post_status} onChange={set("neris_post_status")} placeholder="e.g. success, pending" />
-              </Field>
-              <Field label="NERIS Incident Composite ID" full>
-                <Input value={form.neris_incident_composite} onChange={set("neris_incident_composite")} placeholder="e.g. FD12345678|001|000000001" />
-              </Field>
-              <Field label="NERIS Logged">
-                <Select value={form.neris_logged ? "true" : "false"} onValueChange={(v) => setForm((f) => ({ ...f, neris_logged: v === "true" }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="false">No</SelectItem>
-                    <SelectItem value="true">Yes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Email Status">
-                <Input value={form.email_status} onChange={set("email_status")} placeholder="e.g. sent, pending" />
-              </Field>
-              <Field label="Form URL" full>
-                <Input value={form.form_url} onChange={set("form_url")} placeholder="Google Forms edit URL" />
-              </Field>
-            </Section>
+              <Section
+                title="Responders"
+                badge={responders.length > 0 ? `${responders.length}` : undefined}
+                fullGrid
+                warning={!hasIC ? "No IC assigned" : null}
+              >
+                <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                      Incident Commander (IC)
+                      {!hasIC && <span className="ml-2 text-xs text-amber-600">⚠ Required</span>}
+                    </Label>
+                    <Input
+                      value={form.incident_commander}
+                      onChange={set("incident_commander")}
+                      placeholder={icFromResponders ? `Auto: ${icFromResponders}` : "Name or assign IC role below"}
+                      className={!hasIC ? "border-amber-300" : ""}
+                    />
+                    {icFromResponders && !form.incident_commander && (
+                      <p className="text-xs text-green-600 mt-1">Auto-detected from responders: {icFromResponders}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-slate-700 mb-1.5 block">Ambulance Service/Unit No.</Label>
+                    <Input
+                      value={form.ambulance_unit || ""}
+                      onChange={(e) => setForm(f => ({ ...f, ambulance_unit: e.target.value }))}
+                      placeholder="e.g. Med-Tech / 8001"
+                    />
+                  </div>
+                </div>
+                <ResponderSection responders={responders} onChange={setResponders} apparatus={apparatus} members={members} />
+              </Section>
 
-          {/* NERIS Translation Engine */}
-          <Section title="NERIS Translation Engine" badge="Admin Only" fullGrid>
-            <NerisPanel form={form} incidentId={id} units={units} responders={responders} />
-          </Section>
+              <Section title="Mutual Aid" defaultOpen={false}>
+                <Field label="Mutual Aid Given/Received">
+                  <Select value={form.mutual_aid} onValueChange={set("mutual_aid")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{MUTUAL_AID_OPTIONS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field label="FDID Number Received">
+                  <Input value={form.fdid_received} onChange={set("fdid_received")} placeholder="e.g. Oppelo, Sardis" />
+                </Field>
+                <Field label="Hydrant Number/Location">
+                  <Input value={form.hydrant_location} onChange={set("hydrant_location")} />
+                </Field>
+              </Section>
+            </TabsContent>
+
+            {/* ── DETAILS ── */}
+            <TabsContent value="details" className="space-y-2 mt-0">
+              <Section title="Property / Loss Values">
+                <Field label="Property Value ($)"><Input type="number" value={form.value_dollar} onChange={set("value_dollar")} /></Field>
+                <Field label="Loss ($)"><Input type="number" value={form.loss_dollar} onChange={set("loss_dollar")} /></Field>
+                <Field label="Crop Value ($)"><Input type="number" value={form.value_crop} onChange={set("value_crop")} /></Field>
+                <Field label="Vehicle Value ($)"><Input type="number" value={form.value_vehicle} onChange={set("value_vehicle")} /></Field>
+                <Field label="Total Amount ($)"><Input type="number" value={form.total_amount} onChange={set("total_amount")} /></Field>
+                <Field label="Area"><Input value={form.area} onChange={set("area")} placeholder="e.g. 2 acres" /></Field>
+                <Field label="VIN / LIC"><Input value={form.vin_lic} onChange={set("vin_lic")} /></Field>
+                <Field label="Products Involved"><Input value={form.products} onChange={set("products")} /></Field>
+                <Field label="Patients Injured"><Input type="number" value={form.patients_injured} onChange={set("patients_injured")} /></Field>
+                <Field label="Fatalities"><Input type="number" value={form.fatalities} onChange={set("fatalities")} /></Field>
+              </Section>
+            </TabsContent>
+
+            {/* ── NARRATIVE ── */}
+            <TabsContent value="narrative" className="space-y-2 mt-0">
+              <Section title="Narrative" fullGrid>
+                <NarrativeGuided fields={form} onChange={setNarr} />
+              </Section>
+            </TabsContent>
+
+            {/* ── FIRE (conditional) ── */}
+            {isFireAny && (
+              <TabsContent value="fire" className="space-y-2 mt-0">
+                <Section
+                  title="NERIS Fire Completion Questions"
+                  badge={isFireStructure ? "Required for Structure Fire" : "Fire Incident"}
+                  fullGrid
+                >
+                  <FireModulesSection value={fireModules} onChange={setFireModules} isStructureFire={isFireStructure} />
+                </Section>
+              </TabsContent>
+            )}
+
+            {/* ── NERIS (admin only) ── */}
+            {isAdmin && (
+              <TabsContent value="neris" className="space-y-2 mt-0">
+                <Section title="NERIS Data" badge="Admin Only">
+                  <Field label="NERIS Environment">
+                    <Select value={form.neris_env} onValueChange={set("neris_env")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TEST">TEST</SelectItem>
+                        <SelectItem value="PROD">PROD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="NERIS Post Status">
+                    <Input value={form.neris_post_status} onChange={set("neris_post_status")} placeholder="e.g. success, pending" />
+                  </Field>
+                  <Field label="NERIS Incident Composite ID" full>
+                    <Input value={form.neris_incident_composite} onChange={set("neris_incident_composite")} placeholder="e.g. FD12345678|001|000000001" />
+                  </Field>
+                  <Field label="NERIS Logged">
+                    <Select value={form.neris_logged ? "true" : "false"} onValueChange={(v) => setForm((f) => ({ ...f, neris_logged: v === "true" }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="false">No</SelectItem>
+                        <SelectItem value="true">Yes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field label="Email Status">
+                    <Input value={form.email_status} onChange={set("email_status")} placeholder="e.g. sent, pending" />
+                  </Field>
+                  <Field label="Form URL" full>
+                    <Input value={form.form_url} onChange={set("form_url")} placeholder="Google Forms edit URL" />
+                  </Field>
+                </Section>
+
+                <Section title="NERIS Translation Engine" badge="Admin Only" fullGrid>
+                  <NerisPanel form={form} incidentId={id} units={units} responders={responders} />
+                </Section>
+              </TabsContent>
+            )}
+          </Tabs>
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
