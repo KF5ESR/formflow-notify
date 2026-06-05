@@ -230,6 +230,21 @@ export default function IncidentForm() {
     return issues;
   }, [hasIC, clearBeforeScene, clearBeforeDispatch]);
 
+  // Resolve unit times with global fallbacks (same logic as UnitSection.getTimesForUnit)
+  const resolvedUnits = useMemo(() => {
+    return units.map((unit) => {
+      const existing = unitTimes[unit.unit_id] || {};
+      const isPOV = unit.unit_id === "POV";
+      const defaults = {};
+      if (!existing.dispatch_time?.trim() && form.dispatch_time)       defaults.dispatch_time  = form.dispatch_time;
+      if (isPOV && defaults.dispatch_time && !existing.enroute_time?.trim()) { defaults.enroute_time = form.dispatch_time; }
+      if (!existing.on_scene_time?.trim() && form.first_on_scene_time) defaults.on_scene_time  = form.first_on_scene_time;
+      if (!existing.clear_time?.trim()    && form.fd_clear_time)       defaults.clear_time     = form.fd_clear_time;
+      const existingNonEmpty = Object.fromEntries(Object.entries(existing).filter(([, v]) => v !== "" && v != null));
+      return { ...unit, ...defaults, ...existingNonEmpty };
+    });
+  }, [units, unitTimes, form.dispatch_time, form.first_on_scene_time, form.fd_clear_time]);
+
   // Export payload
   const handleExport = () => {
     const payload = buildNerisPayload(form, units, responders);
@@ -244,12 +259,12 @@ export default function IncidentForm() {
 
   // Export incident
   const handleExportPDF = () => {
-    const doc = generateIncidentPDF(form, units, responders, department);
+    const doc = generateIncidentPDF(form, resolvedUnits, responders, department);
     doc.save(`incident_${form.nfirs_id || "draft"}_${form.date || "nodate"}.pdf`);
   };
 
   const handleExportCSV = () => {
-    const csv = generateIncidentCSV(form, units, responders, department);
+    const csv = generateIncidentCSV(form, resolvedUnits, responders, department);
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
