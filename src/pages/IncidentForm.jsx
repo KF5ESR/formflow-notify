@@ -487,7 +487,14 @@ export default function IncidentForm() {
                     <SelectContent>{FD_OPTIONS_FILTERED.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <UnitSection responders={responders} unitTimes={unitTimes} onUnitTimesChange={setUnitTimes} globalDispatch={form.dispatch_time} />
+                <UnitSection
+                  responders={responders}
+                  unitTimes={unitTimes}
+                  onUnitTimesChange={setUnitTimes}
+                  globalDispatch={form.dispatch_time}
+                  globalOnScene={form.first_on_scene_time}
+                  globalClear={form.fd_clear_time}
+                />
               </Section>
 
               <Section

@@ -81,7 +81,7 @@ function UnitCard({ unitId, responders, times, onTimeChange, isPOV }) {
 
 // unitTimes: map of unitId -> time fields
 // onUnitTimesChange: (updatedMap) => void
-export default function UnitSection({ responders = [], unitTimes = {}, onUnitTimesChange, globalDispatch }) {
+export default function UnitSection({ responders = [], unitTimes = {}, onUnitTimesChange, globalDispatch, globalOnScene, globalClear }) {
   // Derive unique units from responders
   const unitIds = [...new Set(responders.map((r) => r.assigned_unit).filter(Boolean))];
 
@@ -89,19 +89,18 @@ export default function UnitSection({ responders = [], unitTimes = {}, onUnitTim
     onUnitTimesChange({ ...unitTimes, [unitId]: updatedTimes });
   };
 
-  // Auto-populate dispatch from global if not set
+  // Auto-populate times from Basics tab globals if not manually set on the unit
   const getTimesForUnit = (unitId) => {
     const existing = unitTimes[unitId] || {};
+    const isPOV = unitId === "POV";
+    const defaults = {};
     if (!existing.dispatch_time && globalDispatch) {
-      const isPOV = unitId === "POV";
-      return {
-        dispatch_time: globalDispatch,
-        enroute_time: isPOV ? globalDispatch : "",
-        _enroute_auto: isPOV,
-        ...existing,
-      };
+      defaults.dispatch_time = globalDispatch;
+      if (isPOV) { defaults.enroute_time = globalDispatch; defaults._enroute_auto = true; }
     }
-    return existing;
+    if (!existing.on_scene_time && globalOnScene) defaults.on_scene_time = globalOnScene;
+    if (!existing.clear_time && globalClear)    defaults.clear_time = globalClear;
+    return { ...defaults, ...existing };
   };
 
   if (unitIds.length === 0) {
