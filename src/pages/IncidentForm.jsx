@@ -470,7 +470,7 @@ export default function IncidentForm() {
                   </div>
                 )}
                 <Field label="Type Response (Secondary)">
-                  <Select value={form.type_response_2} onValueChange={set("type_response_2")}>
+                  <Select value={form.type_response_2 || ""} onValueChange={(v) => setForm((f) => ({ ...f, type_response_2: v || "" }))}>
                     <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value={null}>None</SelectItem>
@@ -479,7 +479,7 @@ export default function IncidentForm() {
                   </Select>
                 </Field>
                 <Field label="Type Response (Tertiary)">
-                  <Select value={form.type_response_3} onValueChange={set("type_response_3")}>
+                  <Select value={form.type_response_3 || ""} onValueChange={(v) => setForm((f) => ({ ...f, type_response_3: v || "" }))}>
                     <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value={null}>None</SelectItem>
