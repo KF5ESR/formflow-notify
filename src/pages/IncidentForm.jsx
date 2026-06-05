@@ -15,6 +15,7 @@ import UnitSection from "@/components/UnitSection";
 import ResponderSection from "@/components/ResponderSection";
 import NarrativeGuided, { buildNarrative } from "@/components/NarrativeGuided";
 import { buildNerisPayload, TYPE_RESPONSE_MAP } from "@/utils/nerisPayload";
+import { usePermissions } from "@/lib/permissions";
 import NerisPanel from "@/components/NerisPanel";
 import { generateIncidentPDF } from "@/utils/incidentPDF";
 import { generateIncidentCSV } from "@/utils/incidentCSV";
@@ -118,8 +119,9 @@ export default function IncidentForm() {
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
   const { department } = useDepartment();
+  const { canSubmitNeris, isSuperAdmin } = usePermissions();
   const isEdit = !!id;
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = isSuperAdmin || canSubmitNeris();
 
   // Set FD_OPTIONS based on user role
   const FD_OPTIONS_FILTERED = useMemo(() => {
