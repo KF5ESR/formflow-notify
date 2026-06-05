@@ -94,13 +94,17 @@ export default function UnitSection({ responders = [], unitTimes = {}, onUnitTim
     const existing = unitTimes[unitId] || {};
     const isPOV = unitId === "POV";
     const defaults = {};
-    if (!existing.dispatch_time && globalDispatch) {
+    if (!existing.dispatch_time?.trim() && globalDispatch) {
       defaults.dispatch_time = globalDispatch;
       if (isPOV) { defaults.enroute_time = globalDispatch; defaults._enroute_auto = true; }
     }
-    if (!existing.on_scene_time && globalOnScene) defaults.on_scene_time = globalOnScene;
-    if (!existing.clear_time && globalClear)    defaults.clear_time = globalClear;
-    return { ...defaults, ...existing };
+    if (!existing.on_scene_time?.trim() && globalOnScene) defaults.on_scene_time = globalOnScene;
+    if (!existing.clear_time?.trim() && globalClear)      defaults.clear_time = globalClear;
+    // Only let existing values win if they are non-empty
+    const existingNonEmpty = Object.fromEntries(
+      Object.entries(existing).filter(([, v]) => v !== "" && v != null)
+    );
+    return { ...defaults, ...existingNonEmpty };
   };
 
   if (unitIds.length === 0) {
