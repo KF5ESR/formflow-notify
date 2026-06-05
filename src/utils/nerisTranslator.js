@@ -325,17 +325,19 @@ export function translateToNeris(faJson, config = {}) {
   const narrativeRaw = faJson.narrative_raw || {};
 
   // ── Incident type resolution ──────────────────────────────────────────────
-  const rawType1 = base.incident_type?.code || '';  // May already be a hierarchy
-  const rawLabel1 = base.incident_type?.label || rawType1;
-  const codeHierarchy1 = resolveIncidentTypeCode(rawLabel1) || resolveIncidentTypeCode(rawType1) || rawType1;
+  // Helper: if .code is already a canonical hierarchy (X||Y||Z), use it directly.
+  // Only fall back to label resolution if no valid code is present.
+  const resolveTypeEntry = (entry) => {
+    if (!entry) return '';
+    const code = entry.code || '';
+    if (/^[A-Z]+(\|\|[A-Z_]+)+$/.test(code)) return code;  // already canonical — trust it
+    const label = entry.label || code;
+    return resolveIncidentTypeCode(label) || resolveIncidentTypeCode(code) || code;
+  };
 
-  const rawType2 = base.incident_type_secondary?.code || '';
-  const rawLabel2 = base.incident_type_secondary?.label || rawType2;
-  const codeHierarchy2 = rawLabel2 ? (resolveIncidentTypeCode(rawLabel2) || resolveIncidentTypeCode(rawType2) || rawType2) : '';
-
-  const rawType3 = base.incident_type_tertiary?.code || '';
-  const rawLabel3 = base.incident_type_tertiary?.label || rawType3;
-  const codeHierarchy3 = rawLabel3 ? (resolveIncidentTypeCode(rawLabel3) || resolveIncidentTypeCode(rawType3) || rawType3) : '';
+  const codeHierarchy1 = resolveTypeEntry(base.incident_type);
+  const codeHierarchy2 = resolveTypeEntry(base.incident_type_secondary);
+  const codeHierarchy3 = resolveTypeEntry(base.incident_type_tertiary);
 
   const incidentTypes = [
     codeHierarchy1 && { type: codeHierarchy1 },
