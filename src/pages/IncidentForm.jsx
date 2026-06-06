@@ -20,6 +20,7 @@ import NerisPanel from "@/components/NerisPanel";
 import { generateIncidentPDF } from "@/utils/incidentPDF";
 import { generateIncidentCSV } from "@/utils/incidentCSV";
 import FireModulesSection, { DEFAULT_FIRE_MODULES } from "@/components/FireModulesSection";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
@@ -426,7 +427,11 @@ export default function IncidentForm() {
 
               <Section title="Location & Contact">
                 <Field label="Incident Location" required full>
-                  <Input value={form.incident_location} onChange={set("incident_location")} placeholder="Street address or intersection" />
+                  <AddressAutocomplete
+                    value={form.incident_location}
+                    onChange={(val) => setForm((f) => ({ ...f, incident_location: val }))}
+                    placeholder="Street address or intersection"
+                  />
                 </Field>
                 <Field label="Owner / Occupant / Patient">
                   <Input value={form.owner_occupant} onChange={set("owner_occupant")} placeholder="Name and address" />
