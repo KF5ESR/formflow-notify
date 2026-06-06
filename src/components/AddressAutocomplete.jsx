@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { MapPin, Loader2 } from "lucide-react";
 
-// Nominatim bounding box centered on Mammoth Spring, AR (36.4958, -91.5318)
+// Nominatim viewbox centered on Mammoth Spring, AR (36.4958, -91.5318)
+// Format: left,top,right,bottom (min_lon, max_lat, max_lon, min_lat)
 // ~80 mile radius covers Hardy AR, Salem AR, Thayer MO, Alton MO, etc.
-const VIEWBOX = "-92.9,-92.4,35.2,37.8"; // left,right,bottom,top (lon,lon,lat,lat)
-const BOUNDED = "1";
+const VIEWBOX = "-93.5,37.8,-90.0,35.2";
+const BOUNDED = "0"; // bias but don't restrict — allows results slightly outside box
 
 export default function AddressAutocomplete({ value, onChange, placeholder, className }) {
   const [query, setQuery] = useState(value || "");
@@ -43,9 +44,9 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
       setLoading(true);
       try {
         const url = `https://nominatim.openstreetmap.org/search?` +
-          `q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=6` +
+          `q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=8` +
           `&viewbox=${VIEWBOX}&bounded=${BOUNDED}` +
-          `&countrycodes=us`;
+          `&countrycodes=us&dedupe=1`;
         const res = await fetch(url, {
           headers: { "Accept-Language": "en-US", "User-Agent": "FastAttack-FD-App" }
         });
