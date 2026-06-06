@@ -326,6 +326,7 @@ export function translateToNeris(faJson, config = {}) {
   const apparatus = faJson.apparatus || [];
   const meta = faJson.meta || {};
   const narrativeRaw = faJson.narrative_raw || {};
+  const incidentPoint = faJson.incident_point || null; // { latitude, longitude }
 
   // ── Incident type resolution ──────────────────────────────────────────────
   // Helper: if .code is already a canonical hierarchy (X||Y||Z), use it directly.
@@ -523,6 +524,9 @@ export function translateToNeris(faJson, config = {}) {
       dispatch_time_confidence:  'MEDIUM',
       note: 'No PSAP/CAD feed. DISPATCH_TIME entered by department personnel as best-available approximation.',
     },
+
+    // Incident point — WGS84 lat/lon (NERIS core required field)
+    ...(incidentPoint ? { incident_point: incidentPoint } : {}),
 
     // Incident types array (canonical hierarchy objects)
     incident_types: incidentTypes,

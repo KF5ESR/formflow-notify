@@ -51,6 +51,7 @@ function formatMinutes(mins) {
 
 const EMPTY_FORM = {
   nfirs_id: "", psrid: "", date: "", dispatch_time: "", first_on_scene_time: "",
+  incident_lat: null, incident_lon: null,
   control_time: "", fd_clear_time: "",
   incident_location: "", owner_occupant: "", contact_number: "",
   nature_of_call: "", investigation: "No", action_taken: "", type_response: "", type_response_2: "", type_response_3: "",
@@ -429,7 +430,11 @@ export default function IncidentForm() {
                 <Field label="Incident Location" required full>
                   <AddressAutocomplete
                     value={form.incident_location}
-                    onChange={(val) => setForm((f) => ({ ...f, incident_location: val }))}
+                    onChange={(val, coords) => setForm((f) => ({
+                      ...f,
+                      incident_location: val,
+                      ...(coords ? { incident_lat: coords.lat, incident_lon: coords.lon } : {}),
+                    }))}
                     placeholder="Street address or intersection"
                   />
                 </Field>

@@ -70,6 +70,7 @@ function MapPopup({ lat, lon, label, onClose }) {
   );
 }
 
+// onChange(formattedAddress, { lat, lon } | null) — coords passed as second arg when known
 export default function AddressAutocomplete({ value, onChange, placeholder, className }) {
   const [query, setQuery] = useState(value || "");
   const [suggestions, setSuggestions] = useState([]);
@@ -143,11 +144,11 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
     ].filter(Boolean);
     const formatted = parts.join(", ") || item.display_name;
     setQuery(formatted);
-    onChange(formatted);
-    // Store coordinates from Nominatim result
-    if (item.lat && item.lon) {
-      setCoords({ lat: parseFloat(item.lat), lon: parseFloat(item.lon) });
-    }
+    const newCoords = (item.lat && item.lon)
+      ? { lat: parseFloat(item.lat), lon: parseFloat(item.lon) }
+      : null;
+    if (newCoords) setCoords(newCoords);
+    onChange(formatted, newCoords);
     setSuggestions([]);
     setOpen(false);
   };

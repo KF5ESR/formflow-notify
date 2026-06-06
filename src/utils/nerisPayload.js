@@ -217,6 +217,11 @@ export function buildNerisPayload(form, units, responders) {
   const incidentType = resolveType(form.type_response) || { code: "OTHER", label: "Other" };
   const location = parseAddress(form.incident_location);
 
+  // Geocoordinates from AddressAutocomplete (Nominatim WGS84)
+  const incidentPoint = (form.incident_lat && form.incident_lon)
+    ? { latitude: Number(form.incident_lat), longitude: Number(form.incident_lon) }
+    : null;
+
   const alarmISO    = toISO(form.date, form.dispatch_time);
   const onSceneISO  = toISO(form.date, form.first_on_scene_time);
   const clearISO    = toISO(form.date, form.fd_clear_time);
@@ -286,6 +291,9 @@ export function buildNerisPayload(form, units, responders) {
       area: form.area || "",
       vin_lic: form.vin_lic || "",
     },
+    // Incident point (WGS84 lat/lon from geocoder — NERIS core required)
+    incident_point: incidentPoint,
+
     // Apparatus & personnel arrays
     apparatus: nerisApparatus,
     personnel: nerisPersonnel,
