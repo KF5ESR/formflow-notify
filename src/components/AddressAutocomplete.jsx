@@ -151,6 +151,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
     onChange(formatted, newCoords);
     setSuggestions([]);
     setOpen(false);
+    if (newCoords) setShowMap(true); // auto-open map preview on selection
   };
 
   return (
