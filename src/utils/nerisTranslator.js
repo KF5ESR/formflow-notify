@@ -292,11 +292,14 @@ function parseAddress(raw, defaults = {}) {
       additional_info: s,
     };
   }
+  // Fallback: try to extract zip and state from the raw string
+  const zipMatch = s.match(/\b(\d{5}(?:-\d{4})?)\b/);
+  const stateMatch = s.match(/\b([A-Z]{2})\b/);
   return {
     additional_info: s,
     postal_community: defaults.city || '',
-    state: defaults.state || 'AR',
-    postal_code: defaults.postal_code || '',
+    state: stateMatch ? stateMatch[1] : (defaults.state || 'AR'),
+    postal_code: zipMatch ? zipMatch[1] : (defaults.postal_code || ''),
   };
 }
 

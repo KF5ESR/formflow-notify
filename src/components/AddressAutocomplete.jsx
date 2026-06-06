@@ -64,11 +64,15 @@ export default function AddressAutocomplete({ value, onChange, placeholder, clas
 
   const handleSelect = (item) => {
     const addr = item.address || {};
-    // Build a clean address string: house_number + road + city + state + postcode
+    // Use 2-letter state abbreviation (ISO3166-2-lvl4 = "US-AR" → "AR")
+    const stateAbbr = (addr['ISO3166-2-lvl4'] || '').replace('US-', '') || addr.state_code || addr.state || '';
+    // Prefer city/town/village/hamlet over county for postal_community
+    const city = addr.city || addr.town || addr.village || addr.hamlet || addr.county || "";
+    // Build a clean address string: house_number + road + city + state_abbr + postcode
     const parts = [
       addr.house_number && addr.road ? `${addr.house_number} ${addr.road}` : (addr.road || ""),
-      addr.city || addr.town || addr.village || addr.hamlet || addr.county || "",
-      addr.state || "",
+      city,
+      stateAbbr,
       addr.postcode || "",
     ].filter(Boolean);
     const formatted = parts.join(", ") || item.display_name;
