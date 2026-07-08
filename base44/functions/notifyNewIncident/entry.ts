@@ -95,14 +95,21 @@ Deno.serve(async (req) => {
     // ── Units Responded ────────────────────────────────────────────────────
     if (units.length > 0) {
       lines.push('=== Units Responded ===');
+      const gDispatch = val(incident.dispatch_time);
+      const gOnScene  = val(incident.first_on_scene_time);
+      const gClear    = val(incident.fd_clear_time);
       units.forEach((unit) => {
         const staffing = unit.staffing || 0;
         lines.push(`${unit.unit_id}  (${staffing} personnel)`);
+        const dTime  = unit.dispatch_time  || gDispatch  || '';
+        const eTime  = unit.enroute_time   || '';
+        const osTime = unit.on_scene_time  || gOnScene   || '';
+        const cTime  = unit.clear_time     || gClear     || '';
         const times = [
-          unit.dispatch_time && `Dispatch: ${unit.dispatch_time}`,
-          unit.enroute_time   && `Enroute: ${unit.enroute_time}`,
-          unit.on_scene_time  && `On Scene: ${unit.on_scene_time}`,
-          unit.clear_time     && `Clear: ${unit.clear_time}`,
+          dTime  && `Dispatch: ${dTime}`,
+          eTime  && `Enroute: ${eTime}`,
+          osTime && `On Scene: ${osTime}`,
+          cTime  && `Clear: ${cTime}`,
         ].filter(Boolean);
         if (times.length > 0) {
           lines.push('  ' + times.join('   '));
