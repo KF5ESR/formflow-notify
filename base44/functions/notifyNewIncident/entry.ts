@@ -114,6 +114,10 @@ Deno.serve(async (req) => {
         if (times.length > 0) {
           lines.push('  ' + times.join('   '));
         }
+        const unitResponders = responders.filter((r) => r.assigned_unit === unit.unit_id);
+        unitResponders.forEach((resp) => {
+          lines.push(`  ${resp.name || '—'}`);
+        });
       });
       lines.push('');
     }
