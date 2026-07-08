@@ -193,7 +193,7 @@ export default function IncidentForm() {
        });
        setUnitTimes(timesMap);
      } catch (_) { setUnitTimes({}); }
-   } else if (department && !isAdmin) {
+   } else if (department) {
      setForm((f) => ({ ...f, select_fd: department.department_name }));
    }
   }, [existing, department, isAdmin]);

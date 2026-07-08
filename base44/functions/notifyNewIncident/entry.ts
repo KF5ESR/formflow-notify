@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
         header: 'Location & Contact',
         fields: [
           { label: 'Incident Location', key: 'incident_location', required: true },
+          { label: 'Property Type', key: 'property_type' },
           { label: 'Owner/Occupant/Patient', key: 'owner_occupant' },
           { label: 'Contact Number', key: 'contact_number' },
           { label: 'Hydrant Number/Location', key: 'hydrant_location' },
@@ -74,7 +75,6 @@ Deno.serve(async (req) => {
           { label: 'Type Response (Primary)', key: 'type_response' },
           { label: 'Type Response (Secondary)', key: 'type_response_2' },
           { label: 'Type Response (Tertiary)', key: 'type_response_3' },
-          { label: 'Property Type', key: 'property_type' },
         ],
       },
       {
