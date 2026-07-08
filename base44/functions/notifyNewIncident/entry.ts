@@ -6,10 +6,11 @@ Deno.serve(async (req) => {
     const body = await req.json();
 
     // Entity automation payload: { event, data, old_data, changed_fields, payload_too_large }
-    const entityId = body.event?.entity_id;
+    // Manual resend payload: { incident_id: "..." }
+    const entityId = body.event?.entity_id || body.incident_id;
     let incident = body.data;
 
-    // If payload was too large, fetch the full incident record
+    // If payload was too large or manual resend, fetch the full incident record
     if (!incident && entityId) {
       incident = await base44.asServiceRole.entities.Incident.get(entityId);
     }
@@ -35,21 +36,76 @@ Deno.serve(async (req) => {
       return Response.json({ message: 'No opted-in members with email on file', sent: 0 });
     }
 
-    // Build email content
-    const subject = `New Incident Report - ${incident.nature_of_call || 'Review Required'}`;
-    const emailBody = [
-      'A new incident report has been submitted and is ready for review.',
-      '',
-      '--- Incident Details ---',
-      `NFIRS ID:           ${incident.nfirs_id || 'N/A'}`,
-      `Date:               ${incident.date || 'N/A'}`,
-      `Nature of Call:     ${incident.nature_of_call || 'N/A'}`,
-      `Location:           ${incident.incident_location || 'N/A'}`,
-      `Action Taken:       ${incident.action_taken || 'N/A'}`,
-      `Incident Commander: ${incident.incident_commander || 'N/A'}`,
-      '',
-      'Please log in to review and process this incident.',
-    ].join('\n');
+    // Field definitions: label + key + required flag
+    // Only fields meaningful to a reviewer; skip internal/NERIS/system fields
+    const FIELDS = [
+      { label: 'NFIRS ID', key: 'nfirs_id' },
+      { label: 'PSRID', key: 'psrid' },
+      { label: 'Date', key: 'date', required: true },
+      { label: 'Dispatch Time', key: 'dispatch_time' },
+      { label: 'First On Scene Time', key: 'first_on_scene_time' },
+      { label: 'Control Time', key: 'control_time' },
+      { label: 'FD Clear Time', key: 'fd_clear_time' },
+      { label: 'Incident Location', key: 'incident_location', required: true },
+      { label: 'Owner/Occupant/Patient', key: 'owner_occupant' },
+      { label: 'Contact Number', key: 'contact_number' },
+      { label: 'Nature of Call', key: 'nature_of_call', required: true },
+      { label: 'Investigation', key: 'investigation' },
+      { label: 'Action Taken', key: 'action_taken', required: true },
+      { label: 'Type Response (Primary)', key: 'type_response' },
+      { label: 'Type Response (Secondary)', key: 'type_response_2' },
+      { label: 'Type Response (Tertiary)', key: 'type_response_3' },
+      { label: 'Property Type', key: 'property_type' },
+      { label: 'Property Value ($)', key: 'value_dollar' },
+      { label: 'Loss ($)', key: 'loss_dollar' },
+      { label: 'Crop Value ($)', key: 'value_crop' },
+      { label: 'Vehicle Value ($)', key: 'value_vehicle' },
+      { label: 'Total Amount ($)', key: 'total_amount' },
+      { label: 'Area', key: 'area' },
+      { label: 'VIN/LIC', key: 'vin_lic' },
+      { label: 'Products Involved', key: 'products' },
+      { label: 'Patients Injured', key: 'patients_injured' },
+      { label: 'Fatalities', key: 'fatalities' },
+      { label: 'Mutual Aid Given/Received', key: 'mutual_aid' },
+      { label: 'FDID Number Received', key: 'fdid_received' },
+      { label: 'Hydrant Number/Location', key: 'hydrant_location' },
+      { label: 'Conditions/Temp', key: 'conditions_temp' },
+      { label: 'Select FD', key: 'select_fd' },
+      { label: 'Incident Commander (IC)', key: 'incident_commander' },
+      { label: 'What was reported?', key: 'narrative_reported' },
+      { label: 'What was found on arrival?', key: 'narrative_found' },
+      { label: 'Patient/Scene condition', key: 'narrative_condition' },
+      { label: 'Actions taken', key: 'narrative_actions' },
+      { label: 'Disposition / Who took over', key: 'narrative_disposition' },
+      { label: 'Narrative (full)', key: 'notes' },
+    ];
+
+    // Build email body — include required fields + any filled field
+    const isResend = !!body.incident_id;
+    const intro = isResend
+      ? 'This is a RESEND of the incident notification.'
+      : 'A new incident report has been submitted and is ready for review.';
+
+    const lines = [intro, '', '--- Incident Details ---'];
+
+    const maxLabel = Math.max(...FIELDS.map((f) => f.label.length));
+    for (const f of FIELDS) {
+      const val = incident[f.key];
+      const hasVal = val !== null && val !== undefined && String(val).trim() !== '';
+      if (hasVal || f.required) {
+        const display = hasVal ? String(val) : 'N/A';
+        const padding = ' '.repeat(Math.max(1, maxLabel - f.label.length + 2));
+        const marker = f.required && !hasVal ? ' (required - missing)' : '';
+        lines.push(`${f.label}:${padding}${display}${marker}`);
+      }
+    }
+
+    lines.push('', 'Please log in to review and process this incident.');
+
+    const subject = isResend
+      ? `[RESEND] Incident Report - ${incident.nature_of_call || 'Review Required'}`
+      : `New Incident Report - ${incident.nature_of_call || 'Review Required'}`;
+    const emailBody = lines.join('\n');
 
     // Get Gmail OAuth token (shared connector — builder's account)
     const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');

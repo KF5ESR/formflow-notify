@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer, AlertTriangle, Download, Printer } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, ArrowLeft, Flame, Clock, Timer, AlertTriangle, Download, Printer, Mail, Loader2 } from "lucide-react";
 import UnitSection from "@/components/UnitSection";
 import ResponderSection from "@/components/ResponderSection";
 import NarrativeGuided, { buildNarrative } from "@/components/NarrativeGuided";
@@ -287,6 +287,23 @@ export default function IncidentForm() {
     onError: (error) => {
       const msg = error?.response?.data?.detail || error?.message || "Unknown error";
       alert("Failed to save incident: " + msg);
+    },
+  });
+
+  const resendEmail = useMutation({
+    mutationFn: () => base44.functions.invoke("notifyNewIncident", { incident_id: id }),
+    onSuccess: (res) => {
+      const data = res.data || res;
+      if (data.sent > 0) {
+        alert(`Notification resent to ${data.sent} member(s).`);
+        queryClient.invalidateQueries({ queryKey: ["incident", id] });
+      } else {
+        alert("No emails were sent. " + (data.message || (data.errors?.length ? data.errors.map(e => e.error).join("; ") : "")));
+      }
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.error || error?.message || "Unknown error";
+      alert("Failed to resend notification: " + msg);
     },
   });
 
@@ -645,6 +662,21 @@ export default function IncidentForm() {
                   </Field>
                   <Field label="Email Status">
                     <Input value={form.email_status} onChange={set("email_status")} placeholder="e.g. sent, pending" />
+                  </Field>
+                  <Field label="Resend Notification">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => resendEmail.mutate()}
+                      disabled={resendEmail.isPending || !isEdit}
+                      className="text-slate-600 border-slate-300"
+                    >
+                      {resendEmail.isPending ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending...</>
+                      ) : (
+                        <><Mail className="w-4 h-4 mr-2" /> Resend Incident Email</>
+                      )}
+                    </Button>
                   </Field>
                   <Field label="Form URL" full>
                     <Input value={form.form_url} onChange={set("form_url")} placeholder="Google Forms edit URL" />
