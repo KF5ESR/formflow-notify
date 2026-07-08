@@ -36,68 +36,115 @@ Deno.serve(async (req) => {
       return Response.json({ message: 'No opted-in members with email on file', sent: 0 });
     }
 
-    // Field definitions: label + key + required flag
-    // Only fields meaningful to a reviewer; skip internal/NERIS/system fields
-    const FIELDS = [
-      { label: 'NFIRS ID', key: 'nfirs_id' },
-      { label: 'PSRID', key: 'psrid' },
-      { label: 'Date', key: 'date', required: true },
-      { label: 'Dispatch Time', key: 'dispatch_time' },
-      { label: 'First On Scene Time', key: 'first_on_scene_time' },
-      { label: 'Control Time', key: 'control_time' },
-      { label: 'FD Clear Time', key: 'fd_clear_time' },
-      { label: 'Incident Location', key: 'incident_location', required: true },
-      { label: 'Owner/Occupant/Patient', key: 'owner_occupant' },
-      { label: 'Contact Number', key: 'contact_number' },
-      { label: 'Nature of Call', key: 'nature_of_call', required: true },
-      { label: 'Investigation', key: 'investigation' },
-      { label: 'Action Taken', key: 'action_taken', required: true },
-      { label: 'Type Response (Primary)', key: 'type_response' },
-      { label: 'Type Response (Secondary)', key: 'type_response_2' },
-      { label: 'Type Response (Tertiary)', key: 'type_response_3' },
-      { label: 'Property Type', key: 'property_type' },
-      { label: 'Property Value ($)', key: 'value_dollar' },
-      { label: 'Loss ($)', key: 'loss_dollar' },
-      { label: 'Crop Value ($)', key: 'value_crop' },
-      { label: 'Vehicle Value ($)', key: 'value_vehicle' },
-      { label: 'Total Amount ($)', key: 'total_amount' },
-      { label: 'Area', key: 'area' },
-      { label: 'VIN/LIC', key: 'vin_lic' },
-      { label: 'Products Involved', key: 'products' },
-      { label: 'Patients Injured', key: 'patients_injured' },
-      { label: 'Fatalities', key: 'fatalities' },
-      { label: 'Mutual Aid Given/Received', key: 'mutual_aid' },
-      { label: 'FDID Number Received', key: 'fdid_received' },
-      { label: 'Hydrant Number/Location', key: 'hydrant_location' },
-      { label: 'Conditions/Temp', key: 'conditions_temp' },
-      { label: 'Select FD', key: 'select_fd' },
-      { label: 'Incident Commander (IC)', key: 'incident_commander' },
-      { label: 'What was reported?', key: 'narrative_reported' },
-      { label: 'What was found on arrival?', key: 'narrative_found' },
-      { label: 'Patient/Scene condition', key: 'narrative_condition' },
-      { label: 'Actions taken', key: 'narrative_actions' },
-      { label: 'Disposition / Who took over', key: 'narrative_disposition' },
-      { label: 'Narrative (full)', key: 'notes' },
+    // Field definitions grouped by section: header + fields (label + key + required flag)
+    const SECTIONS = [
+      {
+        header: 'Incident Identifiers',
+        fields: [
+          { label: 'NFIRS ID', key: 'nfirs_id' },
+          { label: 'PSRID', key: 'psrid' },
+        ],
+      },
+      {
+        header: 'Date & Times',
+        fields: [
+          { label: 'Date', key: 'date', required: true },
+          { label: 'Dispatch Time', key: 'dispatch_time' },
+          { label: 'First On Scene Time', key: 'first_on_scene_time' },
+          { label: 'Control Time', key: 'control_time' },
+          { label: 'FD Clear Time', key: 'fd_clear_time' },
+          { label: 'Conditions/Temp', key: 'conditions_temp' },
+        ],
+      },
+      {
+        header: 'Location & Contact',
+        fields: [
+          { label: 'Incident Location', key: 'incident_location', required: true },
+          { label: 'Owner/Occupant/Patient', key: 'owner_occupant' },
+          { label: 'Contact Number', key: 'contact_number' },
+          { label: 'Hydrant Number/Location', key: 'hydrant_location' },
+        ],
+      },
+      {
+        header: 'Incident Type & Actions',
+        fields: [
+          { label: 'Nature of Call', key: 'nature_of_call', required: true },
+          { label: 'Investigation', key: 'investigation' },
+          { label: 'Action Taken', key: 'action_taken', required: true },
+          { label: 'Type Response (Primary)', key: 'type_response' },
+          { label: 'Type Response (Secondary)', key: 'type_response_2' },
+          { label: 'Type Response (Tertiary)', key: 'type_response_3' },
+          { label: 'Property Type', key: 'property_type' },
+        ],
+      },
+      {
+        header: 'Loss & Values',
+        fields: [
+          { label: 'Property Value ($)', key: 'value_dollar' },
+          { label: 'Loss ($)', key: 'loss_dollar' },
+          { label: 'Crop Value ($)', key: 'value_crop' },
+          { label: 'Vehicle Value ($)', key: 'value_vehicle' },
+          { label: 'Total Amount ($)', key: 'total_amount' },
+          { label: 'Area', key: 'area' },
+          { label: 'VIN/LIC', key: 'vin_lic' },
+          { label: 'Products Involved', key: 'products' },
+          { label: 'Patients Injured', key: 'patients_injured' },
+          { label: 'Fatalities', key: 'fatalities' },
+        ],
+      },
+      {
+        header: 'Mutual Aid & Department',
+        fields: [
+          { label: 'Mutual Aid Given/Received', key: 'mutual_aid' },
+          { label: 'FDID Number Received', key: 'fdid_received' },
+          { label: 'Select FD', key: 'select_fd' },
+          { label: 'Incident Commander (IC)', key: 'incident_commander' },
+        ],
+      },
+      {
+        header: 'Narrative',
+        fields: [
+          { label: 'What was reported?', key: 'narrative_reported' },
+          { label: 'What was found on arrival?', key: 'narrative_found' },
+          { label: 'Patient/Scene condition', key: 'narrative_condition' },
+          { label: 'Actions taken', key: 'narrative_actions' },
+          { label: 'Disposition / Who took over', key: 'narrative_disposition' },
+          { label: 'Narrative (full)', key: 'notes' },
+        ],
+      },
     ];
 
-    // Build email body — include required fields + any filled field
+    // Build email body — include required fields + any filled field, grouped by section
     const isResend = !!body.incident_id;
     const intro = isResend
       ? 'This is a RESEND of the incident notification.'
       : 'A new incident report has been submitted and is ready for review.';
 
-    const lines = [intro, '', '--- Incident Details ---'];
+    const lines = [intro, ''];
 
-    const maxLabel = Math.max(...FIELDS.map((f) => f.label.length));
-    for (const f of FIELDS) {
-      const val = incident[f.key];
-      const hasVal = val !== null && val !== undefined && String(val).trim() !== '';
-      if (hasVal || f.required) {
-        const display = hasVal ? String(val) : 'N/A';
-        const padding = ' '.repeat(Math.max(1, maxLabel - f.label.length + 2));
-        const marker = f.required && !hasVal ? ' (required - missing)' : '';
-        lines.push(`${f.label}:${padding}${display}${marker}`);
+    const maxLabel = Math.max(...SECTIONS.flatMap((s) => s.fields.map((f) => f.label.length)));
+
+    for (const section of SECTIONS) {
+      // Check if any field in this section has a value or is required
+      const hasContent = section.fields.some((f) => {
+        const val = incident[f.key];
+        return (val !== null && val !== undefined && String(val).trim() !== '') || f.required;
+      });
+      if (!hasContent) continue;
+
+      lines.push(`--- ${section.header} ---`);
+
+      for (const f of section.fields) {
+        const val = incident[f.key];
+        const hasVal = val !== null && val !== undefined && String(val).trim() !== '';
+        if (hasVal || f.required) {
+          const display = hasVal ? String(val) : 'N/A';
+          const padding = ' '.repeat(Math.max(1, maxLabel - f.label.length + 2));
+          const marker = f.required && !hasVal ? ' (required - missing)' : '';
+          lines.push(`${f.label}:${padding}${display}${marker}`);
+        }
       }
+      lines.push('');
     }
 
     lines.push('', 'Please log in to review and process this incident.');
