@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     // Build email content
-    const subject = `New Incident Report — ${incident.nature_of_call || 'Review Required'}`;
+    const subject = `New Incident Report - ${incident.nature_of_call || 'Review Required'}`;
     const emailBody = [
       'A new incident report has been submitted and is ready for review.',
       '',
