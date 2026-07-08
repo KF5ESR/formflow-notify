@@ -466,6 +466,12 @@ export default function IncidentForm() {
                 <Field label="Contact Number">
                   <Input value={form.contact_number} onChange={set("contact_number")} placeholder="Phone number" />
                 </Field>
+                <Field label="Property Type">
+                  <Select value={form.property_type} onValueChange={set("property_type")}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>{PROPERTY_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
               </Section>
 
               <Section title="Incident Type & Actions">
@@ -480,12 +486,6 @@ export default function IncidentForm() {
                 </Field>
                 <Field label="Action Taken" required>
                   <Input value={form.action_taken} onChange={set("action_taken")} placeholder="e.g. Extinguish, Medical, Cancelled" />
-                </Field>
-                <Field label="Property Type">
-                  <Select value={form.property_type} onValueChange={set("property_type")}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>{PROPERTY_TYPES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                  </Select>
                 </Field>
                 <Field label="Type Response (Primary)" full>
                   <Select value={form.type_response} onValueChange={set("type_response")}>
