@@ -24,7 +24,7 @@ import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 const TYPE_RESPONSES = Object.keys(TYPE_RESPONSE_MAP);
 const PROPERTY_TYPES = ["RESIDENCE", "INDUSTRIAL", "COMMERCIAL", "AGRICULTURAL", "OTHER"];
-const FD_OPTIONS = ["Petit Jean", "Oppelo", "Sardis", "Morrilton", "Hill Creek"];
+const FD_OPTIONS = ["Fast Attack", "Oppelo", "Sardis", "Morrilton", "Hill Creek"];
 const MUTUAL_AID_OPTIONS = ["N/A", "Given", "Received", "Given and Received"];
 
 function toDateTime(dateStr, timeStr) {
@@ -58,7 +58,7 @@ const EMPTY_FORM = {
   property_type: "", value_dollar: "", loss_dollar: "", value_crop: "", value_vehicle: "",
   area: "", vin_lic: "", products: "", patients_injured: "", fatalities: "",
   mutual_aid: "N/A", fdid_received: "", total_amount: "", hydrant_location: "",
-  conditions_temp: "", select_fd: "Petit Jean", incident_commander: "",
+  conditions_temp: "",   select_fd: "Fast Attack", incident_commander: "",
   narrative_reported: "", narrative_found: "", narrative_condition: "",
   narrative_actions: "", narrative_disposition: "", notes: "", form_url: "",
   neris_env: "TEST", neris_post_status: "", neris_incident_composite: "",
