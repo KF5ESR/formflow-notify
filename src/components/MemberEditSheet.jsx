@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { X, Bell } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RANKS, STATUSES, DEPT_ROLES } from "@/pages/Members";
 
 export default function MemberEditSheet({ member, onSave, onClose, isSaving }) {
@@ -15,6 +16,7 @@ export default function MemberEditSheet({ member, onSave, onClose, isSaving }) {
     rank:            member.rank || "Firefighter",
     department_role: member.department_role || "user",
     status:          member.status || "Active",
+    notify_new_incidents: !!member.notify_new_incidents,
   });
 
   const handleSave = () => {
@@ -77,6 +79,20 @@ export default function MemberEditSheet({ member, onSave, onClose, isSaving }) {
             <p className="text-xs text-slate-400 mt-1.5">
               Prefer changing status over deleting — member history stays linked to past incidents and reports.
             </p>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <Checkbox
+              id="edit-notify-new-incidents"
+              checked={!!form.notify_new_incidents}
+              onCheckedChange={(checked) => setForm({ ...form, notify_new_incidents: checked === true })}
+            />
+            <div>
+              <Label htmlFor="edit-notify-new-incidents" className="text-sm font-medium text-slate-800 cursor-pointer flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-amber-600" /> Email Alert: New Incident Submitted
+              </Label>
+              <p className="text-xs text-slate-500 mt-0.5">Receive an email the moment a new incident report is submitted for review.</p>
+            </div>
           </div>
         </div>
 

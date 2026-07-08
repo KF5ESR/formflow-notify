@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Pencil } from "lucide-react";
+import { Trash2, Plus, Pencil, Bell } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useParams } from "react-router-dom";
 import DeptContextHeader from "@/components/DeptContextHeader";
 import MemberEditSheet from "@/components/MemberEditSheet";
@@ -39,7 +40,7 @@ const ROLE_COLORS = {
   viewer:     "bg-slate-100 text-slate-600",
 };
 
-const EMPTY_FORM = { name: "", email: "", phone: "", badge_number: "", rank: "Firefighter", department_role: "user", status: "Active" };
+const EMPTY_FORM = { name: "", email: "", phone: "", badge_number: "", rank: "Firefighter", department_role: "user", status: "Active", notify_new_incidents: false };
 
 export default function Members() {
   const { deptId } = useParams();
@@ -147,6 +148,19 @@ export default function Members() {
                 </Select>
               </div>
             </div>
+            <div className="flex items-center gap-3 mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <Checkbox
+                id="notify-new-incidents"
+                checked={!!form.notify_new_incidents}
+                onCheckedChange={(checked) => setForm({ ...form, notify_new_incidents: checked === true })}
+              />
+            <div>
+              <Label htmlFor="notify-new-incidents" className="text-sm font-medium text-slate-800 cursor-pointer flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-amber-600" /> Email Alert: New Incident Submitted
+              </Label>
+              <p className="text-xs text-slate-500 mt-0.5">Receive an email the moment a new incident report is submitted for review.</p>
+            </div>
+            </div>
             <div className="flex gap-3">
               <Button onClick={() => create.mutate(form)} disabled={!form.name || create.isPending} className="bg-blue-600 hover:bg-blue-700">Save</Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -164,6 +178,7 @@ export default function Members() {
                 <TableHead>Rank</TableHead>
                 <TableHead>Dept Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Alerts</TableHead>
                 {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -183,6 +198,15 @@ export default function Members() {
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[m.status] || STATUS_COLORS["Inactive"]}`}>
                       {m.status}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {m.notify_new_incidents ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+                        <Bell className="w-3 h-3" /> On
+                      </span>
+                    ) : (
+                      <span className="text-slate-300 text-sm">—</span>
+                    )}
                   </TableCell>
                   {canManage && (
                     <TableCell className="text-right">
