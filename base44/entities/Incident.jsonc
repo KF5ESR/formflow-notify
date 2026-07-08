@@ -39,6 +39,14 @@
       "type": "string",
       "title": "Incident Location"
     },
+    "incident_lat": {
+      "type": "number",
+      "title": "Incident Latitude"
+    },
+    "incident_lon": {
+      "type": "number",
+      "title": "Incident Longitude"
+    },
     "owner_occupant": {
       "type": "string",
       "title": "Owner/Occupant or Patient Name & Address"

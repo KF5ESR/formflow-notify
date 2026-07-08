@@ -284,12 +284,17 @@ export default function IncidentForm() {
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
       if (!isEdit) navigate("/");
     },
+    onError: (error) => {
+      const msg = error?.response?.data?.detail || error?.message || "Unknown error";
+      alert("Failed to save incident: " + msg);
+    },
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const payload = {
       ...form,
+      department_id: department?.id || form.department_id,
       incident_commander: form.incident_commander || icFromResponders,
       units_json: JSON.stringify(units),
       responders_json: JSON.stringify(responders),
