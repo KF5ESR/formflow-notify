@@ -36,118 +36,116 @@ Deno.serve(async (req) => {
       return Response.json({ message: 'No opted-in members with email on file', sent: 0 });
     }
 
-    // Field definitions grouped by section: header + fields (label + key + required flag)
-    const SECTIONS = [
-      {
-        header: 'Incident Identifiers',
-        fields: [
-          { label: 'NFIRS ID', key: 'nfirs_id' },
-          { label: 'PSRID', key: 'psrid' },
-        ],
-      },
-      {
-        header: 'Date & Times',
-        fields: [
-          { label: 'Date', key: 'date', required: true },
-          { label: 'Dispatch Time', key: 'dispatch_time' },
-          { label: 'First On Scene Time', key: 'first_on_scene_time' },
-          { label: 'Control Time', key: 'control_time' },
-          { label: 'FD Clear Time', key: 'fd_clear_time' },
-          { label: 'Conditions/Temp', key: 'conditions_temp' },
-        ],
-      },
-      {
-        header: 'Location & Contact',
-        fields: [
-          { label: 'Incident Location', key: 'incident_location', required: true },
-          { label: 'Property Type', key: 'property_type' },
-          { label: 'Owner/Occupant/Patient', key: 'owner_occupant' },
-          { label: 'Contact Number', key: 'contact_number' },
-          { label: 'Hydrant Number/Location', key: 'hydrant_location' },
-        ],
-      },
-      {
-        header: 'Incident Type & Actions',
-        fields: [
-          { label: 'Nature of Call', key: 'nature_of_call', required: true },
-          { label: 'Investigation', key: 'investigation' },
-          { label: 'Action Taken', key: 'action_taken', required: true },
-          { label: 'Type Response (Primary)', key: 'type_response' },
-          { label: 'Type Response (Secondary)', key: 'type_response_2' },
-          { label: 'Type Response (Tertiary)', key: 'type_response_3' },
-        ],
-      },
-      {
-        header: 'Loss & Values',
-        fields: [
-          { label: 'Property Value ($)', key: 'value_dollar' },
-          { label: 'Loss ($)', key: 'loss_dollar' },
-          { label: 'Crop Value ($)', key: 'value_crop' },
-          { label: 'Vehicle Value ($)', key: 'value_vehicle' },
-          { label: 'Total Amount ($)', key: 'total_amount' },
-          { label: 'Area', key: 'area' },
-          { label: 'VIN/LIC', key: 'vin_lic' },
-          { label: 'Products Involved', key: 'products' },
-          { label: 'Patients Injured', key: 'patients_injured' },
-          { label: 'Fatalities', key: 'fatalities' },
-        ],
-      },
-      {
-        header: 'Mutual Aid & Department',
-        fields: [
-          { label: 'Mutual Aid Given/Received', key: 'mutual_aid' },
-          { label: 'FDID Number Received', key: 'fdid_received' },
-          { label: 'Select FD', key: 'select_fd' },
-          { label: 'Incident Commander (IC)', key: 'incident_commander' },
-        ],
-      },
-      {
-        header: 'Narrative',
-        fields: [
-          { label: 'What was reported?', key: 'narrative_reported' },
-          { label: 'What was found on arrival?', key: 'narrative_found' },
-          { label: 'Patient/Scene condition', key: 'narrative_condition' },
-          { label: 'Actions taken', key: 'narrative_actions' },
-          { label: 'Disposition / Who took over', key: 'narrative_disposition' },
-          { label: 'Narrative (full)', key: 'notes' },
-        ],
-      },
-    ];
-
-    // Build email body — include required fields + any filled field, grouped by section
+    // Build email body — structured to match the PDF export layout
     const isResend = !!body.incident_id;
-    const intro = isResend
-      ? 'This is a RESEND of the incident notification.'
-      : 'A new incident report has been submitted and is ready for review.';
+    const lines = [];
 
-    const lines = [intro, ''];
+    // Parse units and responders from JSON
+    let units = [];
+    let responders = [];
+    try { units = JSON.parse(incident.units_json || '[]'); } catch (_) { units = []; }
+    try { responders = JSON.parse(incident.responders_json || '[]'); } catch (_) { responders = []; }
 
-    const maxLabel = Math.max(...SECTIONS.flatMap((s) => s.fields.map((f) => f.label.length)));
+    const val = (v) => (v !== null && v !== undefined && String(v).trim() !== '') ? String(v) : null;
+    const pad = (label, targetLen) => label + ': ' + ' '.repeat(Math.max(0, targetLen - label.length));
 
-    for (const section of SECTIONS) {
-      // Check if any field in this section has a value or is required
-      const hasContent = section.fields.some((f) => {
-        const val = incident[f.key];
-        return (val !== null && val !== undefined && String(val).trim() !== '') || f.required;
-      });
-      if (!hasContent) continue;
+    // ── Header ──────────────────────────────────────────────────────────────
+    lines.push('Incident Report');
+    lines.push(incident.select_fd || 'Fire Department');
+    lines.push('');
 
-      lines.push(`--- ${section.header} ---`);
+    // ── Incident Identifiers ─────────────────────────────────────────────────
+    lines.push('=== Incident Identifiers ===');
+    if (val(incident.nfirs_id)) lines.push(`NFIRS ID: ${val(incident.nfirs_id)}`);
+    if (val(incident.psrid))     lines.push(`PSRID: ${val(incident.psrid)}`);
+    lines.push('');
 
-      for (const f of section.fields) {
-        const val = incident[f.key];
-        const hasVal = val !== null && val !== undefined && String(val).trim() !== '';
-        if (hasVal || f.required) {
-          const display = hasVal ? String(val) : 'N/A';
-          const padding = ' '.repeat(Math.max(1, maxLabel - f.label.length + 2));
-          const marker = f.required && !hasVal ? ' (required - missing)' : '';
-          lines.push(`${f.label}:${padding}${display}${marker}`);
-        }
-      }
+    // ── Incident Details ────────────────────────────────────────────────────
+    lines.push('=== Incident Details ===');
+    if (val(incident.date))              lines.push(`Date: ${val(incident.date)}`);
+    if (val(incident.incident_location)) lines.push(`Location: ${val(incident.incident_location)}`);
+    if (val(incident.nature_of_call))    lines.push(`Nature of Call: ${val(incident.nature_of_call)}`);
+    if (val(incident.investigation))     lines.push(`Investigation: ${val(incident.investigation)}`);
+    if (val(incident.action_taken))      lines.push(`Action Taken: ${val(incident.action_taken)}`);
+    if (val(incident.property_type))     lines.push(`Property Type: ${val(incident.property_type)}`);
+    if (val(incident.type_response))     lines.push(`Type Response (Primary): ${val(incident.type_response)}`);
+    if (val(incident.type_response_2))   lines.push(`Type Response (Secondary): ${val(incident.type_response_2)}`);
+    if (val(incident.type_response_3))   lines.push(`Type Response (Tertiary): ${val(incident.type_response_3)}`);
+    if (val(incident.conditions_temp))   lines.push(`Conditions / Temp: ${val(incident.conditions_temp)}`);
+    lines.push('');
+
+    // ── Operational Times ─────────────────────────────────────────────────
+    lines.push('=== Operational Times ===');
+    if (val(incident.dispatch_time))       lines.push(`Dispatch: ${val(incident.dispatch_time)}`);
+    if (val(incident.first_on_scene_time)) lines.push(`First on Scene: ${val(incident.first_on_scene_time)}`);
+    if (val(incident.control_time))        lines.push(`Control: ${val(incident.control_time)}`);
+    if (val(incident.fd_clear_time))      lines.push(`FD Clear: ${val(incident.fd_clear_time)}`);
+    lines.push('');
+
+    // ── Command & Logistics ────────────────────────────────────────────────
+    const icName = val(incident.incident_commander) || (responders.find(r => r.role === 'IC') || {}).name || null;
+    if (icName || val(incident.mutual_aid) || val(incident.hydrant_location)) {
+      lines.push('=== Command & Logistics ===');
+      if (icName)                       lines.push(`Incident Commander: ${icName}`);
+      if (val(incident.mutual_aid))     lines.push(`Mutual Aid: ${val(incident.mutual_aid)}`);
+      if (val(incident.hydrant_location)) lines.push(`Hydrant Location: ${val(incident.hydrant_location)}`);
       lines.push('');
     }
 
-    lines.push('', 'Please log in to review and process this incident.');
+    // ── Units Responded ────────────────────────────────────────────────────
+    if (units.length > 0) {
+      lines.push('=== Units Responded ===');
+      units.forEach((unit) => {
+        const staffing = unit.staffing || 0;
+        lines.push(`${unit.unit_id}  (${staffing} personnel)`);
+        const times = [
+          unit.dispatch_time && `Dispatch: ${unit.dispatch_time}`,
+          unit.enroute_time   && `Enroute: ${unit.enroute_time}`,
+          unit.on_scene_time  && `On Scene: ${unit.on_scene_time}`,
+          unit.clear_time     && `Clear: ${unit.clear_time}`,
+        ].filter(Boolean);
+        if (times.length > 0) {
+          lines.push('  ' + times.join('   '));
+        }
+      });
+      lines.push('');
+    }
+
+    // ── Personnel Responded ────────────────────────────────────────────────
+    if (responders.length > 0) {
+      lines.push('=== Personnel Responded ===');
+      responders.forEach((resp) => {
+        const line = `${resp.name || '—'} (${resp.role || '—'}) — ${resp.assigned_unit || '—'} [${resp.response_type || '—'}]`;
+        lines.push(line);
+      });
+      lines.push('');
+    }
+
+    // ── Casualties ─────────────────────────────────────────────────────────
+    if (val(incident.patients_injured) || val(incident.fatalities)) {
+      lines.push('=== Casualties ===');
+      if (val(incident.patients_injured)) lines.push(`Patients Injured: ${val(incident.patients_injured)}`);
+      if (val(incident.fatalities))       lines.push(`Fatalities: ${val(incident.fatalities)}`);
+      lines.push('');
+    }
+
+    // ── Narrative ──────────────────────────────────────────────────────────
+    const narrativeText = val(incident.notes) || [
+      val(incident.narrative_reported)   && `Reported: ${val(incident.narrative_reported)}`,
+      val(incident.narrative_found)      && `Found: ${val(incident.narrative_found)}`,
+      val(incident.narrative_condition)  && `Condition: ${val(incident.narrative_condition)}`,
+      val(incident.narrative_actions)    && `Actions: ${val(incident.narrative_actions)}`,
+      val(incident.narrative_disposition) && `Disposition: ${val(incident.narrative_disposition)}`,
+    ].filter(Boolean).join('\n');
+
+    if (narrativeText) {
+      lines.push('=== Narrative ===');
+      lines.push(narrativeText);
+      lines.push('');
+    }
+
+    lines.push(isResend ? 'This is a RESEND of the incident notification.' : 'A new incident report has been submitted and is ready for review.');
+    lines.push('Please log in to review and process this incident.');
 
     const subject = isResend
       ? `[RESEND] Incident Report - ${incident.nature_of_call || 'Review Required'}`
