@@ -57,6 +57,12 @@
       ],
       "default": "Active",
       "title": "Status"
+    },
+    "notify_new_incidents": {
+      "type": "boolean",
+      "title": "Email Alert: New Incident Submitted",
+      "default": false,
+      "description": "When enabled, this member receives an email notification the moment a new incident report is submitted for review."
     }
   },
   "required": [
