@@ -36,11 +36,11 @@ Deno.serve(async (req) => {
     }
 
     // Build email content
-    const subject = `🚨 New Incident Report — ${incident.nature_of_call || 'Review Required'}`;
+    const subject = `New Incident Report — ${incident.nature_of_call || 'Review Required'}`;
     const emailBody = [
       'A new incident report has been submitted and is ready for review.',
       '',
-      '━━━ Incident Details ━━━',
+      '--- Incident Details ---',
       `NFIRS ID:           ${incident.nfirs_id || 'N/A'}`,
       `Date:               ${incident.date || 'N/A'}`,
       `Nature of Call:     ${incident.nature_of_call || 'N/A'}`,
@@ -51,16 +51,44 @@ Deno.serve(async (req) => {
       'Please log in to review and process this incident.',
     ].join('\n');
 
+    // Get Gmail OAuth token (shared connector — builder's account)
+    const { accessToken } = await base44.asServiceRole.connectors.getConnection('gmail');
+
     let sent = 0;
     const errors = [];
 
     for (const member of recipients) {
       try {
-        await base44.asServiceRole.integrations.Core.SendEmail({
-          to: member.email,
-          subject,
-          body: emailBody,
-        });
+        // Build RFC 2822 MIME message
+        const mimeMessage = [
+          `To: ${member.email}`,
+          `Subject: ${subject}`,
+          'Content-Type: text/plain; charset=UTF-8',
+          'MIME-Version: 1.0',
+          '',
+          emailBody,
+        ].join('\r\n');
+
+        // Base64url encode for Gmail API
+        const encodedMessage = btoa(unescape(encodeURIComponent(mimeMessage)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        const res = await fetch(
+          'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ raw: encodedMessage }),
+          }
+        );
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Gmail API ${res.status}: ${errText}`);
+        }
         sent++;
       } catch (err) {
         errors.push({ email: member.email, error: err.message });
