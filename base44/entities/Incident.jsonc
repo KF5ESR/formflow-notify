@@ -284,18 +284,26 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.department_id}}"
+              "data.department_id": "{{user.data.department_id}}"
             },
             {
-              "user_condition": {
-                "role": {
-                  "$in": [
-                    "dept_admin",
-                    "reviewer",
-                    "responder"
-                  ]
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "dept_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "reviewer"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "responder"
+                  }
                 }
-              }
+              ]
             }
           ]
         }
@@ -309,7 +317,7 @@
           }
         },
         {
-          "data.department_id": "{{user.department_id}}"
+          "data.department_id": "{{user.data.department_id}}"
         }
       ]
     },
@@ -323,18 +331,26 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.department_id}}"
+              "data.department_id": "{{user.data.department_id}}"
             },
             {
-              "user_condition": {
-                "role": {
-                  "$in": [
-                    "dept_admin",
-                    "reviewer",
-                    "responder"
-                  ]
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "dept_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "reviewer"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "responder"
+                  }
                 }
-              }
+              ]
             }
           ]
         }
@@ -350,7 +366,7 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.department_id}}"
+              "data.department_id": "{{user.data.department_id}}"
             },
             {
               "user_condition": {

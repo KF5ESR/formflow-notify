@@ -78,17 +78,21 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.department_id}}"
+              "data.department_id": "{{user.data.department_id}}"
             },
             {
-              "user_condition": {
-                "role": {
-                  "$in": [
-                    "dept_admin",
-                    "reviewer"
-                  ]
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "dept_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "reviewer"
+                  }
                 }
-              }
+              ]
             }
           ]
         }
@@ -104,17 +108,21 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.department_id}}"
+              "data.department_id": "{{user.data.department_id}}"
             },
             {
-              "user_condition": {
-                "role": {
-                  "$in": [
-                    "dept_admin",
-                    "reviewer"
-                  ]
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "dept_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "reviewer"
+                  }
                 }
-              }
+              ]
             }
           ]
         }
