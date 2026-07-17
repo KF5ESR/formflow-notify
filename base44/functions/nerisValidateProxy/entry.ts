@@ -19,6 +19,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'proxyUrl is required' }, { status: 400 });
     }
 
+    // SSRF protection: restrict proxy targets to an allowlist of known-safe Google hosts.
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(proxyUrl);
+    } catch (_) {
+      return Response.json({ error: 'Invalid proxyUrl' }, { status: 400 });
+    }
+    const ALLOWED_HOSTS = ['script.google.com', 'script.googleusercontent.com'];
+    if (!ALLOWED_HOSTS.includes(parsedUrl.hostname)) {
+      return Response.json({ error: 'Forbidden: proxyUrl host is not allowed' }, { status: 403 });
+    }
+
     // Make the request server-side — no CORS issues
     // 55s timeout: Apps Script has a 60s execution limit; we abort just before that.
     const controller = new AbortController();

@@ -8,15 +8,28 @@ Deno.serve(async (req) => {
     // Entity automation payload: { event, data, old_data, changed_fields, payload_too_large }
     // Manual resend payload: { incident_id: "..." }
     const entityId = body.event?.entity_id || body.incident_id;
-    let incident = body.data;
+    const isManualResend = !!body.incident_id;
 
-    // If payload was too large or manual resend, fetch the full incident record
-    if (!incident && entityId) {
+    // Manual resends require an authenticated admin (automations run as service role)
+    if (isManualResend) {
+      const user = await base44.auth.me();
+      if (!user) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      if (user.role !== 'super_admin' && user.role !== 'dept_admin') {
+        return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
+    }
+
+    // ALWAYS fetch the canonical incident from the DB — never trust client-supplied body.data
+    // This prevents attackers from injecting spoofed email content via a crafted payload.
+    let incident = null;
+    if (entityId) {
       incident = await base44.asServiceRole.entities.Incident.get(entityId);
     }
 
     if (!incident) {
-      return Response.json({ error: 'No incident data in payload' }, { status: 400 });
+      return Response.json({ error: 'No incident found for the given ID' }, { status: 400 });
     }
 
     const departmentId = incident.department_id;
