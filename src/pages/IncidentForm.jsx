@@ -280,9 +280,9 @@ export default function IncidentForm() {
 
   const save = useMutation({
     mutationFn: (data) => isEdit ? base44.entities.Incident.update(id, data) : base44.entities.Incident.create(data),
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
-      if (!isEdit) navigate("/");
+      if (!isEdit && created?.id) navigate(`/incident/${created.id}`, { replace: true });
     },
     onError: (error) => {
       const msg = error?.response?.data?.detail || error?.message || "Unknown error";
