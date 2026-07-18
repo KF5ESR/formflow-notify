@@ -72,7 +72,7 @@
   "rls": {
     "create": {
       "user_condition": {
-            "role": "admin"
+        "role": "admin"
       }
     },
     "read": {
@@ -83,7 +83,9 @@
           }
         },
         {
-          "id": { "$in": "{{user.data.department_ids}}" }
+          "id": {
+            "$in": "{{user.data.department_ids}}"
+          }
         }
       ]
     },
@@ -97,11 +99,13 @@
         {
           "$and": [
             {
-              "id": { "$in": "{{user.data.department_admin_ids}}" }
+              "id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
@@ -110,7 +114,7 @@
     },
     "delete": {
       "user_condition": {
-            "role": "admin"
+        "role": "admin"
       }
     }
   }
