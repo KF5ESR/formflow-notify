@@ -47,17 +47,19 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-                "role": "dept_admin"
+                "role": "user"
               }
             }
           ]
@@ -68,11 +70,13 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
-          "data.department_id": "{{user.data.department_id}}"
+          "data.department_id": {
+            "$in": "{{user.data.department_ids}}"
+          }
         }
       ]
     },
@@ -80,17 +84,19 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-                "role": "dept_admin"
+                "role": "user"
               }
             }
           ]
@@ -101,17 +107,19 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-                "role": "dept_admin"
+                "role": "user"
               }
             }
           ]

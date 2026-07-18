@@ -2,7 +2,7 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "role": {
+    "app_role": {
       "type": "string",
       "enum": [
         "super_admin",
@@ -12,11 +12,103 @@
         "viewer"
       ],
       "default": "user",
-      "title": "Role"
+      "title": "Fast Attack Role",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     },
     "department_id": {
       "type": "string",
-      "title": "Department ID"
+      "title": "Legacy / Default Department ID",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "department_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Accessible Department IDs",
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "department_admin_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Department Admin IDs",
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "department_reviewer_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Department Reviewer IDs",
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "department_responder_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Department Responder IDs",
+      "default": [],
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
+    },
+    "default_department_id": {
+      "type": "string",
+      "title": "Default Department ID",
+      "rls": {
+        "read": true,
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      }
     }
   }
 }

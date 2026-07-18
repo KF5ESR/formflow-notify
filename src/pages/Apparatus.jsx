@@ -23,7 +23,8 @@ export default function Apparatus() {
   const [form, setForm] = useState({ unit_id: "", unit_type: "Engine", description: "", status: "Available" });
   const [editingUnit, setEditingUnit] = useState(null);
 
-  const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
+  const canManage = user?.role === "admin" || user?.app_role === "super_admin" ||
+    (user?.department_admin_ids || []).includes(deptId);
 
   const { data: apparatus = [] } = useQuery({
     queryKey: ["apparatus", deptId],

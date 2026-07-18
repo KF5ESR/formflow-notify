@@ -5,7 +5,7 @@
  *   super_admin → dept_admin → reviewer → user → viewer
  *
  * Two sources of truth:
- *   1. isSuperAdmin   — from Base44 user.role (global bypass)
+ *   1. isSuperAdmin   — from Base44 admin role or User.app_role (global bypass)
  *   2. departmentRole — from Member entity record (dept-scoped)
  *
  * Rules of thumb:
@@ -34,13 +34,13 @@ function getLevel(role) {
 
 export function usePermissions() {
   const { user } = useAuth();
-  const { isSuperAdmin, departmentRole } = useDepartment();
+  const { isSuperAdmin, departmentRole, hasMultipleDepartments } = useDepartment();
 
   // Effective role: super_admin bypasses everything.
-  // Otherwise use Member.department_role, falling back to Base44 user.role.
+  // Otherwise use Member.department_role, falling back to User.app_role.
   const effectiveRole = isSuperAdmin
     ? "super_admin"
-    : departmentRole || user?.role || "viewer";
+    : departmentRole || user?.app_role || "viewer";
 
   const level = getLevel(effectiveRole);
   const atLeast = (role) => level >= getLevel(role);
@@ -107,7 +107,7 @@ export function usePermissions() {
   const canManageMembers            = () => atLeast("dept_admin");
   const canManageRoles              = () => atLeast("dept_admin");
   const canManageDepartmentSettings = () => isSuperAdmin;
-  const canSwitchDepartments        = () => isSuperAdmin;
+  const canSwitchDepartments        = () => hasMultipleDepartments;
 
   /**
    * guard(allowed, message?)

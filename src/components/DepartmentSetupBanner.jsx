@@ -56,7 +56,8 @@ export default function DepartmentSetupBanner() {
   if (isComplete) return null;
 
   const nextStep = ONBOARDING_STEPS[stepIdx + 1];
-  const canManage = ["super_admin", "admin", "dept_admin"].includes(user?.role);
+  const canManage = user?.role === "admin" || user?.app_role === "super_admin" ||
+    (user?.department_admin_ids || []).includes(departmentId);
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 space-y-2">

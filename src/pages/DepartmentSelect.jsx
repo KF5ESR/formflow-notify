@@ -1,5 +1,5 @@
 /**
- * DepartmentSelect — Super Admin landing: pick a department to enter.
+ * DepartmentSelect — pick an authorized department to enter.
  */
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Flame, Building2, ArrowRight, Settings } from "lucide-react";
 import { usePermissions } from "@/lib/permissions";
 import PermissionDenied from "@/components/PermissionDenied";
+import { useDepartment } from "@/lib/DepartmentContext";
 
 const STATUS_COLOR = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -19,17 +20,18 @@ const STATUS_COLOR = {
 export default function DepartmentSelect() {
   const navigate = useNavigate();
   const { canSwitchDepartments } = usePermissions();
+  const { isSuperAdmin, accessibleDepartmentIds, selectDepartment } = useDepartment();
 
   const { data: departments = [], isLoading } = useQuery({
     queryKey: ["departments"],
-    queryFn: () => base44.entities.Department.list("-created_date"),
+    queryFn: () => base44.entities.Department.list("department_name"),
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {!canSwitchDepartments() && (
         <div className="max-w-2xl mx-auto px-4 py-16">
-          <PermissionDenied message="Only super admins can switch departments." />
+          <PermissionDenied message="Your account has only one department assignment." />
         </div>
       )}
       {canSwitchDepartments() && <div className="max-w-2xl mx-auto px-4 py-12">
@@ -41,12 +43,12 @@ export default function DepartmentSelect() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Departments</h1>
-              <p className="text-sm text-slate-500">Super Admin — select a department</p>
+              <p className="text-sm text-slate-500">Select your working department</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/admin/departments")}>
+          {isSuperAdmin && <Button variant="outline" size="sm" onClick={() => navigate("/admin/departments")}>
             <Settings className="w-3.5 h-3.5 mr-1.5" /> Manage
-          </Button>
+          </Button>}
         </div>
 
         {isLoading ? (
@@ -63,10 +65,12 @@ export default function DepartmentSelect() {
           </div>
         ) : (
           <div className="space-y-3">
-            {departments.map((dept) => (
+            {departments.filter((dept) => isSuperAdmin || accessibleDepartmentIds.includes(dept.id)).map((dept) => (
               <button
                 key={dept.id}
-                onClick={() => navigate(`/dept/${dept.id}`)}
+                onClick={() => {
+                  if (selectDepartment(dept.id)) navigate(`/dept/${dept.id}`);
+                }}
                 className="w-full bg-white border border-slate-200 rounded-xl p-5 flex items-center justify-between gap-4 hover:border-red-300 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-center gap-4">

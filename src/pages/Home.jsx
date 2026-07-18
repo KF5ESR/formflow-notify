@@ -14,7 +14,7 @@ import {
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSuperAdmin, department, departmentId, loading } = useDepartment();
+  const { department, departmentId, loading, hasMultipleDepartments } = useDepartment();
   const { canCreate } = usePermissions();
 
   // Fetch recent incidents for this department
@@ -24,8 +24,8 @@ export default function Home() {
     enabled: !!departmentId,
   });
 
-  // Super admins still go to department select
-  if (!loading && isSuperAdmin) {
+  // Users with more than one department choose their working context first.
+  if (!loading && hasMultipleDepartments && !departmentId) {
     navigate("/select-dept", { replace: true });
     return null;
   }
@@ -65,7 +65,11 @@ export default function Home() {
           </div>
         </div>
         {department && (
-          <Badge className="bg-white/10 text-white border-white/20 backdrop-blur">
+          <Badge
+            className={`bg-white/10 text-white border-white/20 backdrop-blur ${hasMultipleDepartments ? "cursor-pointer hover:bg-white/20" : ""}`}
+            onClick={() => hasMultipleDepartments && navigate("/select-dept")}
+            title={hasMultipleDepartments ? "Switch department" : undefined}
+          >
             {department.short_name || department.department_name}
           </Badge>
         )}

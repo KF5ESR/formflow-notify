@@ -74,8 +74,8 @@ export default function AdminDepartmentConfig() {
   const [configForm, setConfigForm] = useState(EMPTY_CONFIG);
   const [existingConfigId, setExistingConfigId] = useState(null);
 
-  const canAccess = ["super_admin", "admin", "dept_admin"].includes(currentUser?.role) ||
-    (currentUser?.role === "dept_admin" && currentUser?.department_id === id);
+  const canAccess = currentUser?.role === "admin" || currentUser?.app_role === "super_admin" ||
+    (currentUser?.department_admin_ids || []).includes(id);
 
   const { data: department } = useQuery({
     queryKey: ["department", id],

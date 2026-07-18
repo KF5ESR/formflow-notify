@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ONBOARDING_STEPS, getOnboardingStepIndex } from "@/lib/nerisReadiness";
-import { Plus, Building2, ArrowLeft, CheckCircle, Circle, Settings } from "lucide-react";
+import { Plus, Building2, ArrowLeft, CheckCircle, Circle, Settings, Users } from "lucide-react";
 
 const EMPTY = {
   department_name: "", short_name: "", fdid: "", neris_entity_id: "",
@@ -95,7 +95,7 @@ export default function AdminDepartments() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin";
+  const isSuperAdmin = currentUser?.role === "admin" || currentUser?.app_role === "super_admin";
 
   const { data: departments = [], isLoading } = useQuery({
     queryKey: ["departments"],
@@ -133,6 +133,9 @@ export default function AdminDepartments() {
           </div>
           <Button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-red-600 hover:bg-red-700 text-white">
             <Plus className="w-4 h-4 mr-2" /> New Department
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/admin/user-access")}>
+            <Users className="w-4 h-4 mr-2" /> User Access
           </Button>
         </div>
 

@@ -2,7 +2,7 @@
  * DepartmentContext — loads the current user's department + nerisConfig on login.
  * Super admins get no automatic department scope (they can see all).
  */
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -14,9 +14,37 @@ export function DepartmentProvider({ children }) {
   const [nerisConfig, setNerisConfig] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin";
+  const isSuperAdmin = currentUser?.role === "admin" || currentUser?.app_role === "super_admin";
 
   const [memberRecord, setMemberRecord] = useState(null);
+  const accessibleDepartmentIds = useMemo(() => {
+    const ids = new Set(currentUser?.department_ids || []);
+    if (currentUser?.department_id) ids.add(currentUser.department_id);
+    return [...ids];
+  }, [currentUser?.department_id, currentUser?.department_ids]);
+  const initialDepartmentId = currentUser?.default_department_id
+    || currentUser?.department_id
+    || accessibleDepartmentIds[0]
+    || null;
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const stored = window.localStorage.getItem(`fast-attack-department:${currentUser.id}`);
+    const permittedStored = isSuperAdmin || accessibleDepartmentIds.includes(stored);
+    setSelectedDepartmentId(permittedStored && stored ? stored : initialDepartmentId);
+  }, [currentUser?.id, initialDepartmentId, isSuperAdmin, accessibleDepartmentIds]);
+
+  const selectDepartment = useCallback((departmentId) => {
+    if (!departmentId || (!isSuperAdmin && !accessibleDepartmentIds.includes(departmentId))) return false;
+    setSelectedDepartmentId(departmentId);
+    window.localStorage.setItem(`fast-attack-department:${currentUser.id}`, departmentId);
+    return true;
+  }, [accessibleDepartmentIds, currentUser?.id, isSuperAdmin]);
+  const canAccessDepartment = useCallback(
+    (departmentId) => isSuperAdmin || accessibleDepartmentIds.includes(departmentId),
+    [accessibleDepartmentIds, isSuperAdmin]
+  );
 
   // department_role comes from the Member record (app-level), not from Base44 user role
   const departmentRole = memberRecord?.department_role || null;
@@ -27,7 +55,7 @@ export function DepartmentProvider({ children }) {
     const load = async () => {
       setLoading(true);
       try {
-        const deptId = currentUser.department_id;
+        const deptId = selectedDepartmentId;
         if (deptId) {
           const [dept, configs, members] = await Promise.all([
             base44.entities.Department.get(deptId),
@@ -41,7 +69,7 @@ export function DepartmentProvider({ children }) {
             (m) => m.email && currentUser.email && m.email.toLowerCase() === currentUser.email.toLowerCase()
           );
           setMemberRecord(myMember || null);
-        } else if (isSuperAdmin) {
+        } else {
           setDepartment(null);
           setNerisConfig(null);
           setMemberRecord(null);
@@ -53,13 +81,13 @@ export function DepartmentProvider({ children }) {
     };
 
     load();
-  }, [currentUser?.id, currentUser?.department_id]);
+  }, [currentUser?.id, selectedDepartmentId, isSuperAdmin]);
 
   const refresh = async () => {
-    if (!currentUser?.department_id) return;
+    if (!selectedDepartmentId) return;
     const [dept, configs] = await Promise.all([
-      base44.entities.Department.get(currentUser.department_id),
-      base44.entities.NerisConfig.filter({ department_id: currentUser.department_id }),
+      base44.entities.Department.get(selectedDepartmentId),
+      base44.entities.NerisConfig.filter({ department_id: selectedDepartmentId }),
     ]);
     setDepartment(dept);
     setNerisConfig(configs[0] || null);
@@ -70,14 +98,18 @@ export function DepartmentProvider({ children }) {
    */
   const scopeFilter = (extra = {}) => {
     if (isSuperAdmin) return extra;
-    const deptId = currentUser?.department_id;
+    const deptId = selectedDepartmentId;
     return deptId ? { department_id: deptId, ...extra } : extra;
   };
 
   return (
     <DepartmentContext.Provider value={{
       department, nerisConfig, loading, isSuperAdmin,
-      departmentId: currentUser?.department_id || null,
+      departmentId: selectedDepartmentId,
+      accessibleDepartmentIds,
+      hasMultipleDepartments: isSuperAdmin || accessibleDepartmentIds.length > 1,
+      canAccessDepartment,
+      selectDepartment,
       memberRecord, departmentRole,
       scopeFilter, refresh,
     }}>

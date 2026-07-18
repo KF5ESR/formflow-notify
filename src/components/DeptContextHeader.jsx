@@ -3,6 +3,7 @@
  * Shows: Department Name | NERIS ID | Status  /  User Name | Role  /  Current Module
  */
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -29,7 +30,14 @@ export default function DeptContextHeader({ module }) {
   const { deptId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isSuperAdmin } = useDepartment();
+  const {
+    isSuperAdmin, departmentRole, hasMultipleDepartments,
+    canAccessDepartment, selectDepartment,
+  } = useDepartment();
+
+  useEffect(() => {
+    if (deptId && canAccessDepartment(deptId)) selectDepartment(deptId);
+  }, [deptId, canAccessDepartment, selectDepartment]);
 
   const { data: dept } = useQuery({
     queryKey: ["department", deptId],
@@ -38,10 +46,10 @@ export default function DeptContextHeader({ module }) {
     staleTime: 60_000,
   });
 
-  const backPath = isSuperAdmin ? "/select-dept" : `/dept/${deptId}`;
   const isOnDashboard = !module || module === "Runs";
 
-  const roleLabel = ROLE_LABELS[user?.role] || user?.role || "—";
+  const effectiveRole = isSuperAdmin ? "super_admin" : departmentRole || user?.app_role;
+  const roleLabel = ROLE_LABELS[effectiveRole] || effectiveRole || "—";
   const statusColor = STATUS_COLORS[dept?.status] || "bg-slate-100 text-slate-500";
 
   return (
@@ -53,7 +61,7 @@ export default function DeptContextHeader({ module }) {
           variant="ghost"
           size="icon"
           className="rounded-full shrink-0 h-8 w-8"
-          onClick={() => isOnDashboard ? navigate(isSuperAdmin ? "/select-dept" : "/") : navigate(`/dept/${deptId}`)}
+          onClick={() => isOnDashboard ? navigate(hasMultipleDepartments ? "/select-dept" : "/") : navigate(`/dept/${deptId}`)}
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
