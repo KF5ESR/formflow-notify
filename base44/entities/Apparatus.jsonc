@@ -53,7 +53,7 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
             },
             {
               "user_condition": {
@@ -72,7 +72,7 @@
           }
         },
         {
-          "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": { "$in": "{{user.data.department_ids}}" }
         }
       ]
     },
@@ -86,7 +86,7 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
             },
             {
               "user_condition": {
@@ -107,7 +107,7 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
             },
             {
               "user_condition": {
