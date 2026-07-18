@@ -48,7 +48,7 @@ export default function DeptContextHeader({ module }) {
 
   const isOnDashboard = !module || module === "Runs";
 
-  const effectiveRole = isSuperAdmin ? "super_admin" : departmentRole || user?.role;
+  const effectiveRole = isSuperAdmin ? "super_admin" : departmentRole || user?.app_role;
   const roleLabel = ROLE_LABELS[effectiveRole] || effectiveRole || "—";
   const statusColor = STATUS_COLORS[dept?.status] || "bg-slate-100 text-slate-500";
 
