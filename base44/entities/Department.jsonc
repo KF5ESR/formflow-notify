@@ -83,7 +83,7 @@
           }
         },
         {
-          "id": "{{user.data.department_id}}"
+          "id": { "$in": "{{user.data.department_ids}}" }
         }
       ]
     },
@@ -97,7 +97,7 @@
         {
           "$and": [
             {
-              "id": "{{user.data.department_id}}"
+              "id": { "$in": "{{user.data.department_admin_ids}}" }
             },
             {
               "user_condition": {
