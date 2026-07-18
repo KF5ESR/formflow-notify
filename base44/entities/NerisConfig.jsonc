@@ -105,11 +105,13 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
@@ -126,18 +128,20 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_ids}}"
+              }
             },
             {
               "$or": [
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 }
               ]
@@ -156,11 +160,13 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
@@ -169,7 +175,7 @@
     },
     "delete": {
       "user_condition": {
-            "role": "admin"
+        "role": "admin"
       }
     }
   }
