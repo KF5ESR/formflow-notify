@@ -14,7 +14,7 @@ export function DepartmentProvider({ children }) {
   const [nerisConfig, setNerisConfig] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const isSuperAdmin = currentUser?.role === "super_admin" || currentUser?.role === "admin";
+  const isSuperAdmin = currentUser?.role === "admin" || currentUser?.app_role === "super_admin";
 
   const [memberRecord, setMemberRecord] = useState(null);
   const accessibleDepartmentIds = useMemo(() => {
