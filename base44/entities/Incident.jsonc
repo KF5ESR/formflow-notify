@@ -285,26 +285,38 @@
           "$and": [
             {
               "$or": [
-                { "data.department_id": { "$in": "{{user.data.department_admin_ids}}" } },
-                { "data.department_id": { "$in": "{{user.data.department_reviewer_ids}}" } },
-                { "data.department_id": { "$in": "{{user.data.department_responder_ids}}" } }
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_admin_ids}}"
+                  }
+                },
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_reviewer_ids}}"
+                  }
+                },
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_responder_ids}}"
+                  }
+                }
               ]
             },
             {
               "$or": [
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
@@ -326,7 +338,9 @@
           }
         },
         {
-          "data.department_id": { "$in": "{{user.data.department_ids}}" }
+          "data.department_id": {
+            "$in": "{{user.data.department_ids}}"
+          }
         }
       ]
     },
@@ -341,26 +355,38 @@
           "$and": [
             {
               "$or": [
-                { "data.department_id": { "$in": "{{user.data.department_admin_ids}}" } },
-                { "data.department_id": { "$in": "{{user.data.department_reviewer_ids}}" } },
-                { "data.department_id": { "$in": "{{user.data.department_responder_ids}}" } }
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_admin_ids}}"
+                  }
+                },
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_reviewer_ids}}"
+                  }
+                },
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_responder_ids}}"
+                  }
+                }
               ]
             },
             {
               "$or": [
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
@@ -384,11 +410,13 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
