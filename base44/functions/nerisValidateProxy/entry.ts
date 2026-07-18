@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
     }
 
     // Restrict to authorized roles
-    if (user.role !== 'super_admin' && user.role !== 'dept_admin') {
+    if (user.role !== 'admin') {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
