@@ -284,7 +284,11 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "$or": [
+                { "data.department_id": { "$in": "{{user.data.department_admin_ids}}" } },
+                { "data.department_id": { "$in": "{{user.data.department_reviewer_ids}}" } },
+                { "data.department_id": { "$in": "{{user.data.department_responder_ids}}" } }
+              ]
             },
             {
               "$or": [
@@ -301,6 +305,11 @@
                 {
                   "user_condition": {
                     "role": "responder"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "user"
                   }
                 }
               ]
@@ -317,7 +326,7 @@
           }
         },
         {
-          "data.department_id": "{{user.data.department_id}}"
+          "data.department_id": { "$in": "{{user.data.department_ids}}" }
         }
       ]
     },
@@ -331,7 +340,11 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "$or": [
+                { "data.department_id": { "$in": "{{user.data.department_admin_ids}}" } },
+                { "data.department_id": { "$in": "{{user.data.department_reviewer_ids}}" } },
+                { "data.department_id": { "$in": "{{user.data.department_responder_ids}}" } }
+              ]
             },
             {
               "$or": [
@@ -348,6 +361,11 @@
                 {
                   "user_condition": {
                     "role": "responder"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "user"
                   }
                 }
               ]
@@ -366,7 +384,7 @@
         {
           "$and": [
             {
-              "data.department_id": "{{user.data.department_id}}"
+              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
             },
             {
               "user_condition": {
