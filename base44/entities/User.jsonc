@@ -16,7 +16,35 @@
     },
     "department_id": {
       "type": "string",
-      "title": "Department ID"
+      "title": "Legacy / Default Department ID"
+    },
+    "department_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "title": "Accessible Department IDs",
+      "default": []
+    },
+    "department_admin_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "title": "Department Admin IDs",
+      "default": []
+    },
+    "department_reviewer_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "title": "Department Reviewer IDs",
+      "default": []
+    },
+    "department_responder_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "title": "Department Responder IDs",
+      "default": []
+    },
+    "default_department_id": {
+      "type": "string",
+      "title": "Default Department ID"
     }
   }
 }
