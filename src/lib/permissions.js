@@ -34,7 +34,7 @@ function getLevel(role) {
 
 export function usePermissions() {
   const { user } = useAuth();
-  const { isSuperAdmin, departmentRole } = useDepartment();
+  const { isSuperAdmin, departmentRole, hasMultipleDepartments } = useDepartment();
 
   // Effective role: super_admin bypasses everything.
   // Otherwise use Member.department_role, falling back to Base44 user.role.
@@ -107,7 +107,7 @@ export function usePermissions() {
   const canManageMembers            = () => atLeast("dept_admin");
   const canManageRoles              = () => atLeast("dept_admin");
   const canManageDepartmentSettings = () => isSuperAdmin;
-  const canSwitchDepartments        = () => isSuperAdmin;
+  const canSwitchDepartments        = () => hasMultipleDepartments;
 
   /**
    * guard(allowed, message?)
