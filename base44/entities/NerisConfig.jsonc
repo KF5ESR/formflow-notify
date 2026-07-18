@@ -99,7 +99,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
@@ -109,7 +109,7 @@
             },
             {
               "user_condition": {
-                "role": "dept_admin"
+            "role": "user"
               }
             }
           ]
@@ -120,7 +120,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
@@ -132,12 +132,12 @@
               "$or": [
                 {
                   "user_condition": {
-                    "role": "dept_admin"
+            "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-                    "role": "reviewer"
+            "role": "user"
                   }
                 }
               ]
@@ -150,7 +150,7 @@
       "$or": [
         {
           "user_condition": {
-            "role": "super_admin"
+            "role": "admin"
           }
         },
         {
@@ -160,7 +160,7 @@
             },
             {
               "user_condition": {
-                "role": "dept_admin"
+            "role": "user"
               }
             }
           ]
@@ -169,7 +169,7 @@
     },
     "delete": {
       "user_condition": {
-        "role": "super_admin"
+            "role": "admin"
       }
     }
   }
