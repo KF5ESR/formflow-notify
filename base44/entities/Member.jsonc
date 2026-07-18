@@ -80,11 +80,13 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
@@ -99,7 +101,9 @@
           }
         },
         {
-              "data.department_id": { "$in": "{{user.data.department_ids}}" }
+          "data.department_id": {
+            "$in": "{{user.data.department_ids}}"
+          }
         }
       ]
     },
@@ -113,11 +117,13 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
@@ -134,11 +140,13 @@
         {
           "$and": [
             {
-              "data.department_id": { "$in": "{{user.data.department_admin_ids}}" }
+              "data.department_id": {
+                "$in": "{{user.data.department_admin_ids}}"
+              }
             },
             {
               "user_condition": {
-            "role": "user"
+                "role": "user"
               }
             }
           ]
