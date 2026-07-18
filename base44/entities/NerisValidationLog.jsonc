@@ -79,20 +79,28 @@
           "$and": [
             {
               "$or": [
-                { "data.department_id": { "$in": "{{user.data.department_admin_ids}}" } },
-                { "data.department_id": { "$in": "{{user.data.department_reviewer_ids}}" } }
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_admin_ids}}"
+                  }
+                },
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_reviewer_ids}}"
+                  }
+                }
               ]
             },
             {
               "$or": [
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
@@ -117,20 +125,28 @@
           "$and": [
             {
               "$or": [
-                { "data.department_id": { "$in": "{{user.data.department_admin_ids}}" } },
-                { "data.department_id": { "$in": "{{user.data.department_reviewer_ids}}" } }
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_admin_ids}}"
+                  }
+                },
+                {
+                  "data.department_id": {
+                    "$in": "{{user.data.department_reviewer_ids}}"
+                  }
+                }
               ]
             },
             {
               "$or": [
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
                   "user_condition": {
-            "role": "user"
+                    "role": "user"
                   }
                 },
                 {
@@ -146,12 +162,12 @@
     },
     "update": {
       "user_condition": {
-            "role": "admin"
+        "role": "admin"
       }
     },
     "delete": {
       "user_condition": {
-            "role": "admin"
+        "role": "admin"
       }
     }
   }
