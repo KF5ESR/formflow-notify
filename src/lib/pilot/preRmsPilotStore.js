@@ -76,22 +76,50 @@ export function formatStamp(iso) {
   });
 }
 
-export function readPilotState() {
+/**
+ * In-memory source of truth. Storage is optional persistence only: in a framed
+ * preview localStorage can throw on access, and the demo must still work.
+ */
+let memoryItems = null;
+
+function readStorage() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { version: 1, items: [] };
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.items)) return { version: 1, items: [] };
-    return { version: 1, items: parsed.items };
+    return parsed && Array.isArray(parsed.items) ? parsed.items : null;
   } catch (_) {
-    return { version: 1, items: [] };
+    return null;
   }
 }
 
-function writePilotState(items) {
-  const next = { version: 1, items };
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  return next;
+export function isStorageAvailable() {
+  try {
+    const probe = `${STORAGE_KEY}.probe`;
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+export function readPilotState() {
+  if (memoryItems === null) {
+    memoryItems = readStorage() || [];
+  }
+  return { version: 1, items: memoryItems };
+}
+
+/** Updates memory first, then tries to persist. Returns whether it persisted. */
+function commit(items) {
+  memoryItems = items;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, items }));
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 /**
@@ -122,7 +150,8 @@ export function loadCadRevision(cad) {
       createdAt: now,
       updatedAt: now,
     };
-    return { items: writePilotState([...state.items, item]).items, result: "created", item };
+    const created = [...state.items, item];
+    return { items: created, result: "created", item, persisted: commit(created) };
   }
 
   const existing = state.items[index];
@@ -141,9 +170,10 @@ export function loadCadRevision(cad) {
   };
   const items = state.items.map((i, idx) => (idx === index ? updated : i));
   return {
-    items: writePilotState(items).items,
+    items,
     result: wasApproved ? "reopened" : "updated",
     item: updated,
+    persisted: commit(items),
   };
 }
 
@@ -166,7 +196,7 @@ export function submitResponderReport(key, data) {
     updatedAt: now,
   };
   const items = state.items.map((i, idx) => (idx === index ? updated : i));
-  return { items: writePilotState(items).items, result: "submitted", item: updated };
+  return { items, result: "submitted", item: updated, persisted: commit(items) };
 }
 
 /** Simulated reviewer approval. Only valid for a submitted, unapproved report. */
@@ -182,11 +212,12 @@ export function approveHandoff(key) {
   const approved = { ...item, status: "approved", approval: { approvedAt: now }, updatedAt: now };
   approved.approval.handoffText = buildHandoffText(approved);
   const items = state.items.map((i, idx) => (idx === index ? approved : i));
-  return { items: writePilotState(items).items, result: "approved", item: approved };
+  return { items, result: "approved", item: approved, persisted: commit(items) };
 }
 
 export function resetPilotData() {
-  return writePilotState([]);
+  const items = [];
+  return { version: 1, items, persisted: commit(items) };
 }
 
 /** Plain-text handoff built only from stored pilot data. */

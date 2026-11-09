@@ -12,6 +12,7 @@ import {
   SAMPLE_CAD_CALL,
   SAMPLE_CAD_UPDATE,
   approveHandoff,
+  isStorageAvailable,
   loadCadRevision,
   readPilotState,
   resetPilotData,
@@ -37,6 +38,7 @@ export default function PreRmsPilot() {
   const [tab, setTab] = useState("responder");
   const [selectedKey, setSelectedKey] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [storageOk, setStorageOk] = useState(() => isStorageAvailable());
 
   const item = items.find((i) => i.key === DEMO_QUEUE_KEY) || null;
   const submitted = items.filter((i) => i.responder?.submittedAt);
@@ -52,9 +54,15 @@ export default function PreRmsPilot() {
     }
   }, [items, selectedKey, submitted.length]);
 
+  // Storage is optional: memory already holds the state, this only reports persistence.
+  const trackPersistence = (res) => {
+    if (typeof res?.persisted === "boolean") setStorageOk(res.persisted);
+  };
+
   const handleLoad = (cad) => {
     const res = loadCadRevision(cad);
     setItems(res.items);
+    trackPersistence(res);
     setNotice({
       tone: res.result === "ignored" ? "warn" : "success",
       text: LOAD_MESSAGES[res.result] || LOAD_MESSAGES.created,
@@ -68,6 +76,7 @@ export default function PreRmsPilot() {
       return;
     }
     setItems(res.items);
+    trackPersistence(res);
     setSelectedKey(DEMO_QUEUE_KEY);
     setNotice({
       tone: "success",
@@ -78,6 +87,7 @@ export default function PreRmsPilot() {
   const handleApprove = (key) => {
     const res = approveHandoff(key);
     setItems(res.items);
+    trackPersistence(res);
     if (res.result === "approved") {
       setNotice({
         tone: "success",
@@ -95,7 +105,9 @@ export default function PreRmsPilot() {
     if (!window.confirm("Clear the Pre-RMS pilot demo data stored in this browser? Live app records are not affected.")) {
       return;
     }
-    setItems(resetPilotData().items);
+    const res = resetPilotData();
+    setItems(res.items);
+    trackPersistence(res);
     setSelectedKey(null);
     setNotice({ tone: "info", text: "Pilot demo data cleared from this browser." });
   };
@@ -142,6 +154,16 @@ export default function PreRmsPilot() {
         </div>
 
         <PilotBanner />
+
+        {!storageOk && (
+          <p
+            role="status"
+            className="mt-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[11px] text-slate-600"
+          >
+            Browser storage is unavailable in this embedded preview, so the demo is held in memory
+            only. A full reload clears it.
+          </p>
+        )}
 
         <div role="status" aria-live="polite">
           {notice && (
