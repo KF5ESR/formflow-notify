@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Flame, Plus, LayoutDashboard, Clock, CheckCircle2,
-  AlertCircle, FileText, TrendingUp,
+  AlertCircle, FileText, TrendingUp, FlaskConical,
 } from "lucide-react";
 
 export default function Home() {
@@ -124,6 +124,21 @@ export default function Home() {
           >
             <LayoutDashboard className="w-5 h-5 mr-2" /> View Dashboard
           </Button>
+        </div>
+
+        {/* Pre-RMS pilot entry point */}
+        <div className="mt-4 flex justify-center">
+          <button
+            type="button"
+            onClick={() => navigate("/pilot/pre-rms-test")}
+            className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+          >
+            <FlaskConical className="w-3.5 h-3.5" />
+            Pre-RMS TEST Pilot
+            <span className="rounded bg-amber-400 px-1 py-0.5 text-[9px] font-bold tracking-[0.16em] text-amber-950">
+              TEST
+            </span>
+          </button>
         </div>
       </div>
 

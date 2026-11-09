@@ -15,6 +15,7 @@ import AdminDepartments from './pages/AdminDepartments';
 import AdminDepartmentConfig from './pages/AdminDepartmentConfig';
 import Members from './pages/Members';
 import Apparatus from './pages/Apparatus';
+import PreRmsPilot from './pages/PreRmsPilot';
 import AdminUserAccess from './pages/AdminUserAccess';
 
 const AuthenticatedApp = () => {
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
       <Route path="/incident/:id" element={<IncidentForm />} />
       <Route path="/admin/departments" element={<AdminDepartments />} />
       <Route path="/admin/departments/:id/config" element={<AdminDepartmentConfig />} />
+      <Route path="/pilot/pre-rms-test" element={<PreRmsPilot />} />
       <Route path="/admin/user-access" element={<AdminUserAccess />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
